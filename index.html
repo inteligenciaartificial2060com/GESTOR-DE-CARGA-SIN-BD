@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Carga v18 (Suministro Compuesto)</title>
+    <title>Gestión de Carga v20 (Estética y Acceso Provisional)</title>
+    
     <style>
 /* --- ESTILOS GENERALES --- */
 :root {
@@ -48,7 +49,7 @@ body {
 
 /* --- ESTILOS MODO OFICINA --- */
 #office-mode {
-    display: grid;
+    display: none; 
     grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
@@ -76,16 +77,19 @@ h2 { margin-top: 10px; }
     overflow: hidden;
 }
 
+/* 3. Ajuste de Espaciado: BD Camiones y Almacén */
+#truck-manager, #warehouse-manager {
+    grid-column: span 1;
+    padding: 10px 25px; /* Reducido a 10px arriba/abajo */
+}
+
 #main-processor {
     grid-column: 1 / -1;
     background-color: #e6f7ff;
     border: 1px solid #b3e0ff;
 }
 
-/* Layout de las bases de datos */
-#product-manager, #truck-manager { grid-column: span 1; }
-#warehouse-manager { grid-column: 1 / -1; margin-top: 20px; }
-
+#warehouse-manager { grid-column: 1 / -1; margin-top: 20px; padding: 10px 25px;}
 
 #prepared-plans-container {
     background-color: #d1ecf1;
@@ -172,9 +176,19 @@ input[type="number"] { width: 100px; }
 .db-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
 .db-item:nth-child(even) { background-color: #f9f9f9; }
 .db-item:last-child { border-bottom: none; }
-.db-item span { font-family: "Courier New", Courier, monospace; font-size: 0.9rem; word-break: break-word; padding-right: 10px; }
-.db-item .db-item-desc { flex-grow: 1; }
+.db-item span { 
+    font-family: "Courier New", Courier, monospace; 
+    font-size: 0.9rem; 
+    word-break: break-word; 
+    padding-right: 10px; 
+    /* 2. Ajuste de Alineación en BD Productos/Camiones */
+    display: inline-block; 
+    text-align: left; 
+}
+.db-item span:nth-child(1) { flex-basis: 100px; } /* Código: Más espacio */
+.db-item .db-item-desc { flex-grow: 1; flex-basis: 150px;} /* Descripción: Más espacio */
 .db-item button { padding: 5px 8px; font-size: 0.8rem; margin-right: 0; margin-left: 5px; }
+.db-item .danger { padding: 5px 8px; font-weight: bold; } /* Botón 'X' más robusto */
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
@@ -190,7 +204,7 @@ input[type="number"] { width: 100px; }
 
 #warehouse-checkout-container { 
     background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; margin-top: 15px; border-radius: 4px; 
-    display: none; /* Oculto por defecto en V18 */
+    display: none; 
 }
 
 /* --- ESTILOS MODO OPERARIO --- */
@@ -271,7 +285,7 @@ input[type="number"] { width: 100px; }
 #op-truck-list-screen h3 { margin-top: 40px; }
 
 #op-inventory-list {
-    background-color: #34495e; /* Fondo oscuro para el modo operario */
+    background-color: #34495e; 
     color: #ecf0f1;
     border: 1px solid #4a637d;
 }
@@ -283,6 +297,20 @@ input[type="number"] { width: 100px; }
     align-items: center;
 }
 #op-inventory-list li:last-child { border-bottom: none; }
+
+/* 5. Ajuste de Estética del Formulario de Inventario */
+#op-inventory-screen .form-inline {
+    max-width: 400px; width: 100%; margin-bottom: 20px;
+    justify-content: center;
+}
+#op-inventory-code { width: 150px; flex-grow: 0; } /* +6 espacios */
+#op-inventory-qty { width: 90px; flex-grow: 0; } /* -15 espacios */
+#op-add-inventory-item-button { 
+    padding: 10px 15px; 
+    font-size: 1rem; 
+    margin-left: 5px; /* -10 espacios */
+    flex-shrink: 0;
+}
 
 
 /* --- Botón de Asistencia --- */
@@ -300,253 +328,288 @@ input[type="number"] { width: 100px; }
     margin: 0;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
-
     </style>
 </head>
-<body>
+<body onload="verificarAccesoProvisional()">
 
-    <div class="logo-container">
-        <a href="https://www.ia2060.com" target="_blank" rel="noopener noreferrer">
-            <img src="https://i.ibb.co/cXhr44XB/LOGO-IA2060-IMG.jpg" alt="Logo de IA2060" class="logo" border="0">
-        </a>
-        <button id="toggle-mode-button" class="secondary">Cambiar a Modo Operario</button>
-    </div>
+    <div id="main-app-container" style="display: none;">
 
-    <div id="office-mode">
-        <h1>Gestor de Carga (v18 - Suministro Compuesto)</h1>
-
-        <div id="main-processor" class="container">
-            <h2>1. Procesador de Pedidos</h2>
-            <div class="form-group">
-                <label for="pedido-input">Pega aquí el "Resumen Diario de Venta":</label>
-                <textarea id="pedido-input" placeholder="Pega el texto del pedido aquí..."></textarea>
-            </div>
-            <button id="process-button">Procesar y Añadir a Lote</button>
-
-            <div id="product-import-notification" style="display: none;"></div>
-            <div id="result"></div>
-
-            <div id="warehouse-checkout-container">
-                <h3>✅ Retiro de Almacén (Checkout)</h3>
-                <pre id="checkout-report-content" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></pre>
-                <button id="share-checkout-whatsapp-button" class="success">Enviar Aviso de Retiro (WhatsApp)</button>
-            </div>
-
-            <div id="prepared-plans-container" style="display: none;">
-                <h3>Planes de Carga Preparados</h3>
-                <ul id="prepared-plans-list"></ul>
-                <button id="generate-transfer-button" class="success">Generar Texto de Transferencia</button>
-                <button id="clear-plans-button" class="danger">Limpiar Lote</button>
-            </div>
-
-            <div id="transfer-text-container" style="display: none;">
-                <h3>Texto de Transferencia (Copiar y Enviar al Operario)</h3>
-                <textarea id="transfer-text-area" readonly></textarea>
-                <button id="copy-transfer-text-button">Copiar Texto</button>
-            </div>
+        <div class="logo-container">
+            <a href="https://www.ia2060.com" target="_blank" rel="noopener noreferrer">
+                <img src="https://i.ibb.co/cXhr44XB/LOGO-IA2060-IMG.jpg" alt="Logo de IA2060" class="logo" border="0">
+            </a>
+            <button id="toggle-mode-button" class="secondary">Cambiar a Modo Operario</button> 
         </div>
 
-        <div id="product-manager" class="container">
-            <h2>2. Base de Datos de Productos</h2>
-            <div class="tabs">
-                <button class="tab-button active" onclick="openTab('tab-add-product', this)">Añadir / Editar</button>
-                <button class="tab-button" onclick="openTab('tab-view-products', this)">Ver Lista</button>
+        <div id="office-mode">
+            <h1>Gestor de Carga (v20 - Provisional)</h1>
+
+            <div id="main-processor" class="container">
+                <h2>1. Procesador de Pedidos</h2>
+                <div class="form-group">
+                    <label for="pedido-input">Pega aquí el "Resumen Diario de Venta":</label>
+                    <textarea id="pedido-input" placeholder="Pega el texto del pedido aquí..."></textarea>
+                </div>
+                <button id="process-button">Procesar y Añadir a Lote</button>
+
+                <div id="product-import-notification" style="display: none;"></div>
+                <div id="result"></div>
+
+                <div id="warehouse-checkout-container">
+                    <h3>✅ Retiro de Almacén (Checkout)</h3>
+                    <pre id="checkout-report-content" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"></pre>
+                    <button id="share-checkout-whatsapp-button" class="success">Enviar Aviso de Retiro (WhatsApp)</button>
+                </div>
+
+                <div id="prepared-plans-container" style="display: none;">
+                    <h3>Planes de Carga Preparados</h3>
+                    <ul id="prepared-plans-list"></ul>
+                    <button id="generate-transfer-button" class="success">Generar Texto de Transferencia</button>
+                    <button id="clear-plans-button" class="danger">Limpiar Lote</button>
+                </div>
+
+                <div id="transfer-text-container" style="display: none;">
+                    <h3>Texto de Transferencia (Copiar y Enviar al Operario)</h3>
+                    <textarea id="transfer-text-area" readonly></textarea>
+                    <button id="copy-transfer-text-button">Copiar Texto</button>
+                    <button id="share-transfer-whatsapp-button" class="success">Enviar por WhatsApp</button>
+                </div>
             </div>
-            <div id="tab-add-product" class="tab-content active">
+
+            <div id="product-manager" class="container">
+                <h2>2. Base de Datos de Productos</h2>
+                <div class="tabs">
+                    <button class="tab-button active" onclick="openTab('tab-add-product', this)">Añadir / Editar</button>
+                    <button class="tab-button" onclick="openTab('tab-view-products', this)">Ver Lista</button>
+                </div>
+                <div id="tab-add-product" class="tab-content active">
+                    <div class="form-inline">
+                        <label for="product-code">Código:</label>
+                        <input type="text" id="product-code" placeholder="Ej: 9001">
+                    </div>
+                    <div class="form-inline">
+                        <label for="product-desc">Descripción:</label>
+                        <input type="text" id="product-desc" placeholder="Ej: BARRIL 50 LITROS">
+                    </div>
+                    <div class="form-inline">
+                        <label for="product-volume">Volumen (m³):</label>
+                        <input type="number" id="product-volume" step="0.0001" min="0" placeholder="Ej: 0.070">
+                    </div>
+                    <button id="add-product-button">Añadir / Actualizar Producto</button>
+                    <button id="clear-product-form-button" class="secondary">Limpiar</button>
+                    <hr style="margin: 20px 0;"><button id="toggle-csv-button" class="secondary">Importar Lista (CSV)</button>
+                    <div id="csv-paste-area">
+                        <label for="csv-input">Pega aquí tu lista (Formato: `Codigo,Descripcion,Volumen`):</label>
+                        <textarea id="csv-input" placeholder="9001,BARRIL 50 LITROS,0.070&#10;9002,BARRIL 30 LITROS,0.048"></textarea>
+                        <button id="import-csv-button">Importar CSV</button>
+                    </div>
+                </div>
+                <div id="tab-view-products" class="tab-content">
+                    <input type="text" id="search-product" placeholder="Buscar producto por código o descripción...">
+                    <div id="product-db-list"></div>
+                    <button id="export-products-button" class="secondary" style="margin-top: 15px;">Exportar Productos (CSV)</button>
+                    <button id="clear-products-button" class="danger" style="margin-top: 15px;">Borrar TODOS los Productos</button>
+                </div>
+            </div>
+
+            <div id="truck-manager" class="container">
+                <h2>3. Base de Datos de Camiones</h2>
                 <div class="form-inline">
-                    <label for="product-code">Código:</label>
-                    <input type="text" id="product-code" placeholder="Ej: 9001">
+                    <label for="truck-name">Nombre:</label>
+                    <input type="text" id="truck-name" placeholder="Ej: DISGAL 2">
                 </div>
                 <div class="form-inline">
-                    <label for="product-desc">Descripción:</label>
-                    <input type="text" id="product-desc" placeholder="Ej: BARRIL 50 LITROS">
+                    <label for="truck-capacity">Capacidad (m³):</label>
+                    <input type="number" id="truck-capacity" step="0.1" min="0" placeholder="Ej: 45.5">
+                </div>
+                <button id="add-truck-button">Añadir / Actualizar Camión</button>
+                <hr style="margin: 20px 0;"><h3>Lista de Camiones Registrados</h3>
+                <div id="truck-db-list"></div>
+                <button id="clear-trucks-button" class="danger" style="margin-top: 15px;">Borrar TODOS los Camiones</button>
+            </div>
+
+            <div id="warehouse-manager" class="container">
+                <h2>4. Gestión de Almacén Propio (Inventario)</h2>
+                <p><strong>El stock se RESTA automáticamente al procesar un pedido.</strong></p>
+                <div class="form-group">
+                    <label for="warehouse-code">Código de Producto (En DB Productos):</label>
+                    <input type="text" id="warehouse-code" placeholder="Ej: 9001">
                 </div>
                 <div class="form-inline">
-                    <label for="product-volume">Volumen (m³):</label>
-                    <input type="number" id="product-volume" step="0.0001" min="0" placeholder="Ej: 0.070">
+                    <label for="warehouse-qty">Existencia (Uds):</label>
+                    <input type="number" id="warehouse-qty" step="1" min="0" placeholder="Ej: 150">
+                    <button id="add-warehouse-button" class="success">Añadir / Actualizar Existencia</button>
                 </div>
-                <button id="add-product-button">Añadir / Actualizar Producto</button>
-                <button id="clear-product-form-button" class="secondary">Limpiar</button>
-                <hr style="margin: 20px 0;"><button id="toggle-csv-button" class="secondary">Importar Lista (CSV)</button>
-                <div id="csv-paste-area">
-                    <label for="csv-input">Pega aquí tu lista (Formato: `Codigo,Descripcion,Volumen`):</label>
-                    <textarea id="csv-input" placeholder="9001,BARRIL 50 LITROS,0.070&#10;9002,BARRIL 30 LITROS,0.048"></textarea>
-                    <button id="import-csv-button">Importar CSV</button>
+                <hr style="margin: 20px 0;">
+                <button id="export-warehouse-button" class="secondary">Exportar Inventario (CSV)</button>
+                <button id="toggle-csv-warehouse-button" class="secondary">Importar CSV (Actualización Masiva)</button>
+                <div id="csv-paste-warehouse-area" style="display: none; margin-top: 15px;">
+                    <label for="csv-warehouse-input">Pega aquí el Inventario de Cierre (Formato: `Código,Cantidad`):</label>
+                    <textarea id="csv-warehouse-input" placeholder="9001,150&#10;9003,50"></textarea>
+                    <button id="import-csv-warehouse-button" class="success">Importar Inventario</button>
                 </div>
-            </div>
-            <div id="tab-view-products" class="tab-content">
-                <input type="text" id="search-product" placeholder="Buscar producto por código o descripción...">
-                <div id="product-db-list"></div>
-                <button id="export-products-button" class="secondary" style="margin-top: 15px;">Exportar Productos (CSV)</button>
-                <button id="clear-products-button" class="danger" style="margin-top: 15px;">Borrar TODOS los Productos</button>
-            </div>
-        </div>
-
-        <div id="truck-manager" class="container">
-            <h2>3. Base de Datos de Camiones</h2>
-            <div class="form-inline">
-                <label for="truck-name">Nombre:</label>
-                <input type="text" id="truck-name" placeholder="Ej: DISGAL 2">
-            </div>
-            <div class="form-inline">
-                <label for="truck-capacity">Capacidad (m³):</label>
-                <input type="number" id="truck-capacity" step="0.1" min="0" placeholder="Ej: 45.5">
-            </div>
-            <button id="add-truck-button">Añadir / Actualizar Camión</button>
-            <hr style="margin: 20px 0;"><h3>Lista de Camiones Registrados</h3>
-            <div id="truck-db-list"></div>
-            <button id="clear-trucks-button" class="danger" style="margin-top: 15px;">Borrar TODOS los Camiones</button>
-        </div>
-
-        <div id="warehouse-manager" class="container">
-            <h2>4. Gestión de Almacén Propio (Inventario)</h2>
-            <p><strong>El stock se RESTA automáticamente al procesar un pedido.</strong></p>
-            <div class="form-group">
-                <label for="warehouse-code">Código de Producto (En DB Productos):</label>
-                <input type="text" id="warehouse-code" placeholder="Ej: 9001">
-            </div>
-            <div class="form-inline">
-                <label for="warehouse-qty">Existencia (Uds):</label>
-                <input type="number" id="warehouse-qty" step="1" min="0" placeholder="Ej: 150">
-                <button id="add-warehouse-button" class="success">Añadir / Actualizar Existencia</button>
-            </div>
-            <hr style="margin: 20px 0;">
-            <button id="export-warehouse-button" class="secondary">Exportar Inventario (CSV)</button>
-            <button id="toggle-csv-warehouse-button" class="secondary">Importar CSV (Actualización Masiva)</button>
-            <div id="csv-paste-warehouse-area" style="display: none; margin-top: 15px;">
-                <label for="csv-warehouse-input">Pega aquí el Inventario de Cierre (Formato: `Código,Cantidad`):</label>
-                <textarea id="csv-warehouse-input" placeholder="9001,150&#10;9003,50"></textarea>
-                <button id="import-csv-warehouse-button" class="success">Importar Inventario</button>
-            </div>
-            <hr style="margin: 20px 0;"><h3>Inventario Actual</h3>
-            <input type="text" id="search-warehouse" placeholder="Buscar producto en almacén...">
-            <div id="warehouse-db-list"></div>
-            <button id="clear-warehouse-button" class="danger" style="margin-top: 15px;">Borrar TODO el Inventario</button>
-        </div>
-
-    </div>
-
-    <div id="operator-mode">
-
-        <div id="op-welcome-screen" class="operator-screen" style="display: flex;">
-            <h2>Modo Operario</h2>
-            <button id="op-start-journey-button" class="success">INICIAR JORNADA</button>
-            <button id="op-start-inventory-button" class="secondary">INICIAR INVENTARIO DE CIERRE</button>
-        </div>
-
-        <div id="op-paste-plans-screen" class="operator-screen">
-            <h2>Cargar Planes de Jornada</h2>
-            <label for="op-paste-textarea">Pega aquí el texto de transferencia recibido:</label>
-            <textarea id="op-paste-textarea"></textarea>
-            <button id="op-load-plans-button">Cargar Planes</button>
-        </div>
-
-        <div id="op-truck-list-screen" class="operator-screen">
-            <h2>Camiones Pendientes</h2>
-            <div id="op-truck-list-container"></div>
-            <h3>Jornada en Curso</h3>
-            <button id="op-finish-journey-button" class="danger">FINALIZAR JORNADA</button>
-        </div>
-
-        <div id="op-truck-start-screen" class="operator-screen">
-            <h2>Preparado para Cargar</h2>
-            <h3 id="start-truck-name" style="font-size: 2rem; color: var(--color-primario);">CAMIÓN X</h3>
-            <button id="op-truck-start-button" class="success">EMPEZAR CARGA DE CAMIÓN</button>
-            <button id="op-truck-cancel-start-button" class="secondary">Volver a Lista</button>
-        </div>
-
-        <div id="op-truck-step-screen" class="operator-screen">
-            <h2 id="step-counter">Paso X de Y</h2>
-            <p id="step-instruction">Instrucción de carga...</p>
-            <button id="operator-next-button" class="success">SIGUIENTE</button>
-            <button id="operator-incident-button" class="danger">Grabar Incidencia</button>
-            <button id="operator-abandon-button" class="secondary" style="margin-top: 40px;">Abandonar Carga (Volver a Lista)</button>
-        </div>
-
-        <div id="op-truck-report-screen" class="operator-screen">
-            <h2>Informe de Camión Finalizado</h2>
-            <pre id="report-content">Generando informe...</pre>
-            <button id="operator-whatsapp-button" class="success">Enviar por WhatsApp</button>
-            <button id="operator-email-button">Enviar por Email</button>
-            <button id="op-truck-report-exit-button" class="secondary">Volver a Lista de Camiones</button>
-        </div>
-
-        <div id="op-journey-report-screen" class="operator-screen">
-            <h2>Informe de Jornada Finalizado</h2>
-            <pre id="journey-report-content">Generando informe de jornada...</pre>
-            <button id="journey-whatsapp-button" class="success">Enviar por WhatsApp</button>
-            <button id="journey-email-button">Enviar por Email</button>
-            <button id="op-journey-report-exit-button" class="secondary">NUEVA JORNADA</button>
-        </div>
-
-        <div id="op-inventory-screen" class="operator-screen">
-            <h2>Inventario de Cierre (Reporte)</h2>
-            <div class="form-inline" style="max-width: 400px; width: 100%; margin-bottom: 20px;">
-                <input type="text" id="op-inventory-code" placeholder="Código de Producto">
-                <input type="number" id="op-inventory-qty" placeholder="Cantidad (Uds.)" step="1" min="0">
-                <button id="op-add-inventory-item-button" class="success" style="margin-top: 0;">Añadir</button>
-            </div>
-            <ul id="op-inventory-list" style="max-width: 400px; width: 100%; text-align: left; list-style: none; padding: 0;">
-                <p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>
-            </ul>
-            <button id="op-generate-inventory-report-button" class="success" style="margin-top: 40px;">Generar Reporte y Enviar</button>
-            <button onclick="showOperatorScreen('op-welcome-screen')" class="secondary">Cancelar y Volver</button>
-        </div>
-
-        <div id="op-inventory-report-screen" class="operator-screen">
-            <h2>Informe de Inventario Generado</h2>
-            <pre id="inventory-report-content">Generando reporte...</pre>
-            <button id="inventory-whatsapp-button" class="success">Enviar por WhatsApp</button>
-            <button id="inventory-email-button">Enviar por Email</button>
-            <button id="op-inventory-report-exit-button" class="secondary">Volver a Inicio</button>
-        </div>
-
-
-    </div>
-
-    <button id="assistance-button" class="secondary" title="Solicitar Asistencia">?</button>
-
-    <script>
-        
-        // ==============================================================================
-        //  🔒 NIVEL 1: PROTECCIÓN PROVISIONAL CON CONTRASEÑA (IMPLEMENTACIÓN)
-        //  ESTO DEBE SER REEMPLAZADO POR FIREBASE PARA UNA SEGURIDAD REAL
-        // ==============================================================================
-        
-        // ⚠️ CAMBIA ESTA CLAVE por la que tú quieras
-        const CLAVE_PROVISIONAL_SECRETA = "MiClaveTemporal12345"; 
-
-        function verificarAccesoProvisional() {
-            let clave = prompt("🔐 Introduzca la clave de acceso para usar el Gestor de Carga (Provisional):");
-            
-            if (clave !== CLAVE_PROVISIONAL_SECRETA) {
-                // Bloquear completamente la aplicación y el script
-                document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 100px;">❌ Acceso Denegado. Clave Incorrecta.</h1>';
                 
-                // Detiene toda la ejecución restante del script
-                throw new Error("Acceso no autorizado."); 
+                <hr style="margin: 20px 0;"><h3>Inventario Actual</h3>
+                <input type="text" id="search-warehouse" placeholder="Buscar producto en almacén...">
+                <div id="warehouse-db-list"></div>
+                <button id="clear-warehouse-button" class="danger" style="margin-top: 15px;">Borrar TODO el Inventario</button>
+            </div>
+
+        </div>
+
+        <div id="operator-mode">
+
+            <div id="op-welcome-screen" class="operator-screen" style="display: flex;">
+                <h2>Modo Operario</h2>
+                <button id="op-start-journey-button" class="success">INICIAR JORNADA</button>
+            </div>
+
+            <div id="op-paste-plans-screen" class="operator-screen">
+                <h2>Cargar Planes de Jornada</h2>
+                <label for="op-paste-textarea">Pega aquí el texto de transferencia recibido:</label>
+                <textarea id="op-paste-textarea"></textarea>
+                <button id="op-load-plans-button">Cargar Planes</button>
+            </div>
+
+            <div id="op-truck-list-screen" class="operator-screen">
+                <h2>Camiones Pendientes</h2>
+                <div id="op-truck-list-container"></div>
+                <h3>Jornada en Curso</h3>
+                <button id="op-start-inventory-button" class="secondary">INICIAR INVENTARIO DE CIERRE</button>
+                <button id="op-finish-journey-button" class="danger">FINALIZAR JORNADA</button>
+            </div>
+
+            <div id="op-truck-start-screen" class="operator-screen">
+                <h2>Preparado para Cargar</h2>
+                <h3 id="start-truck-name" style="font-size: 2rem; color: var(--color-primario);">CAMIÓN X</h3>
+                <button id="op-truck-start-button" class="success">EMPEZAR CARGA DE CAMIÓN</button>
+                <button id="op-truck-cancel-start-button" class="secondary">Volver a Lista</button>
+            </div>
+
+            <div id="op-truck-step-screen" class="operator-screen">
+                <h2 id="step-counter">Paso X de Y</h2>
+                <p id="step-instruction">Instrucción de carga...</p>
+                <button id="operator-next-button" class="success">SIGUIENTE</button>
+                <button id="operator-incident-button" class="danger">Grabar Incidencia</button>
+                <button id="operator-abandon-button" class="secondary" style="margin-top: 40px;">Abandonar Carga (Volver a Lista)</button>
+            </div>
+
+            <div id="op-truck-report-screen" class="operator-screen">
+                <h2>Informe de Camión Finalizado</h2>
+                <pre id="report-content">Generando informe...</pre>
+                <button id="operator-whatsapp-button" class="success">Enviar por WhatsApp</button>
+                <button id="operator-email-button">Enviar por Email</button>
+                <button id="op-truck-report-exit-button" class="secondary">Volver a Lista de Camiones</button>
+            </div>
+
+            <div id="op-journey-report-screen" class="operator-screen">
+                <h2>Informe de Jornada Finalizado</h2>
+                <pre id="journey-report-content">Generando informe de jornada...</pre>
+                <button id="journey-whatsapp-button" class="success">Enviar por WhatsApp</button>
+                <button id="journey-email-button">Enviar por Email</button>
+                <button id="op-journey-report-exit-button" class="secondary">NUEVA JORNADA</button>
+            </div>
+
+            <div id="op-inventory-screen" class="operator-screen">
+                <h2>Inventario de Cierre (Reporte)</h2>
+                <div class="form-inline" style="max-width: 400px; width: 100%; margin-bottom: 20px;">
+                    <input type="text" id="op-inventory-code" placeholder="Código de Producto">
+                    <input type="number" id="op-inventory-qty" placeholder="Cantidad (Uds.)" step="1" min="0">
+                    <button id="op-add-inventory-item-button" class="success" style="margin-top: 0;">Añadir</button>
+                </div>
+                <ul id="op-inventory-list" style="max-width: 400px; width: 100%; text-align: left; list-style: none; padding: 0;">
+                    <p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>
+                </ul>
+                <button id="op-generate-inventory-report-button" class="success" style="margin-top: 40px;">Generar Reporte y Enviar</button>
+                <button onclick="showOperatorScreen('op-truck-list-screen')" class="secondary">Cancelar y Volver</button>
+            </div>
+
+            <div id="op-inventory-report-screen" class="operator-screen">
+                <h2>Informe de Inventario Generado</h2>
+                <pre id="inventory-report-content">Generando reporte...</pre>
+                <button id="inventory-whatsapp-button" class="success">Enviar por WhatsApp</button>
+                <button id="inventory-email-button">Enviar por Email</button>
+                <button id="op-inventory-report-exit-button" class="secondary">Volver a Inicio</button>
+            </div>
+
+
+        </div>
+
+        <button id="assistance-button" class="secondary" title="Solicitar Asistencia">?</button>
+
+    </div> <script>
+        
+        // ==============================================================================
+        //  🔒 ACCESO PROVISIONAL (HASTA LA IMPLEMENTACIÓN DE FIREBASE)
+        // ==============================================================================
+
+        const PASSWORD_PROVISIONAL = '1234'; 
+        
+        // ⚠️ REINCORPORADA LA FUNCIÓN DE ACCESO PROVISIONAL
+        function verificarAccesoProvisional() {
+            const acceso = localStorage.getItem('acceso_provisional');
+            if (acceso !== 'permitido') {
+                let password = prompt("Ingrese la contraseña de acceso provisional:");
+                if (password === PASSWORD_PROVISIONAL) {
+                    localStorage.setItem('acceso_provisional', 'permitido');
+                    document.getElementById('main-app-container').style.display = 'block';
+                    initializeApplication();
+                } else {
+                    alert("Contraseña incorrecta. Acceso denegado.");
+                    document.body.innerHTML = '<h1>Acceso denegado</h1><p>Recargue la página para intentarlo de nuevo.</p>';
+                }
+            } else {
+                 document.getElementById('main-app-container').style.display = 'block';
+                 initializeApplication();
             }
-            // Si la clave es correcta, el script continúa ejecutándose
         }
-
-        // LLAMADA A LA FUNCIÓN DE VERIFICACIÓN
-        verificarAccesoProvisional(); 
-
+        
         // ==============================================================================
-        //  🚀 INICIO DEL SCRIPT PRINCIPAL V18
+        //  💡 CONSTANTES Y LÓGICA V20 (LocalStorage)
         // ==============================================================================
+
+        // --- CONSTANTES DE ALMACENAMIENTO ---
+        const PRODUCT_DB_KEY = 'productDB_v16';
+        const TRUCK_DB_KEY = 'truckDB_v16';
+        const WAREHOUSE_DB_KEY = 'warehouseDB_v16';
+
+        // --- ELEMENTOS DEL DOM (GLOBAL) ---
+        let toggleModeButton;
+        let officeModeDiv;
+        let operatorModeDiv;
+        let assistanceButton;
+
+        // --- BASES DE DATOS ---
+        let productDB = {}; 
+        let truckDB = {}; 
+        let warehouseDB = {};
+
+        // --- ESTADO GLOBAL ---
+        let preparedPlans = [];
+        let journeyStartTime = null;
+        let allJourneyIncidents = [];
+        let operatorTrucksPending = [];
+        let operatorTrucksCompleted = [];
+        let currentLoadList = [];
+        let currentTruckName = '';
+        let currentStep = 0;
+        let loadStartTime = null;
+        let loadIncidents = [];
+        let currentAppMode = 'office'; // office | operator
+        let currentInventory = {}; 
+
+        // --- APIs DE VOZ ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
 
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CONSTANTES DE ALMACENAMIENTO ---
-            const PRODUCT_DB_KEY = 'productDB_v16';
-            const TRUCK_DB_KEY = 'truckDB_v16';
-            const WAREHOUSE_DB_KEY = 'warehouseDB_v16';
 
-            // --- ELEMENTOS DEL DOM (GLOBAL) ---
-            const toggleModeButton = document.getElementById('toggle-mode-button');
-            const officeModeDiv = document.getElementById('office-mode');
-            const operatorModeDiv = document.getElementById('operator-mode');
-            const assistanceButton = document.getElementById('assistance-button');
+             // --- ASIGNACIÓN POST-DOM ---
+            toggleModeButton = document.getElementById('toggle-mode-button');
+            officeModeDiv = document.getElementById('office-mode');
+            operatorModeDiv = document.getElementById('operator-mode');
+            assistanceButton = document.getElementById('assistance-button');
 
             // --- ELEMENTOS DEL DOM (OFICINA) ---
             const pedidoInput = document.getElementById('pedido-input');
@@ -571,8 +634,6 @@ input[type="number"] { width: 100px; }
             const truckCapacityInput = document.getElementById('truck-capacity');
             const truckDbListDiv = document.getElementById('truck-db-list');
             const clearTrucksButton = document.getElementById('clear-trucks-button');
-
-            // --- ELEMENTOS DEL DOM (ALMACÉN) ---
             const warehouseCodeInput = document.getElementById('warehouse-code');
             const warehouseQtyInput = document.getElementById('warehouse-qty');
             const addWarehouseButton = document.getElementById('add-warehouse-button');
@@ -584,9 +645,9 @@ input[type="number"] { width: 100px; }
             const csvWarehouseInput = document.getElementById('csv-warehouse-input');
             const importCsvWarehouseButton = document.getElementById('import-csv-warehouse-button');
             const exportWarehouseButton = document.getElementById('export-warehouse-button');
-
-
-            // --- Lote de Carga (Oficina) ---
+            const warehouseCheckoutContainer = document.getElementById('warehouse-checkout-container');
+            const checkoutReportContent = document.getElementById('checkout-report-content');
+            const shareCheckoutWhatsappButton = document.getElementById('share-checkout-whatsapp-button');
             const preparedPlansContainer = document.getElementById('prepared-plans-container');
             const preparedPlansList = document.getElementById('prepared-plans-list');
             const generateTransferButton = document.getElementById('generate-transfer-button');
@@ -594,99 +655,191 @@ input[type="number"] { width: 100px; }
             const transferTextContainer = document.getElementById('transfer-text-container');
             const transferTextArea = document.getElementById('transfer-text-area');
             const copyTransferTextButton = document.getElementById('copy-transfer-text-button');
-
-            // --- NUEVOS ELEMENTOS DEL DOM (V17/V18) ---
-            const warehouseCheckoutContainer = document.getElementById('warehouse-checkout-container');
-            const checkoutReportContent = document.getElementById('checkout-report-content');
-            const shareCheckoutWhatsappButton = document.getElementById('share-checkout-whatsapp-button');
+            const shareTransferWhatsappButton = document.getElementById('share-transfer-whatsapp-button');
 
             // --- ELEMENTOS DEL DOM (OPERARIO) ---
-            const opWelcomeScreen = document.getElementById('op-welcome-screen');
             const opStartJourneyButton = document.getElementById('op-start-journey-button');
-            const opPastePlansScreen = document.getElementById('op-paste-plans-screen');
             const opPasteTextarea = document.getElementById('op-paste-textarea');
             const opLoadPlansButton = document.getElementById('op-load-plans-button');
-            const opTruckListScreen = document.getElementById('op-truck-list-screen');
             const opTruckListContainer = document.getElementById('op-truck-list-container');
             const opFinishJourneyButton = document.getElementById('op-finish-journey-button');
-            const opTruckStartScreen = document.getElementById('op-truck-start-screen');
             const startTruckName = document.getElementById('start-truck-name');
             const opTruckStartButton = document.getElementById('op-truck-start-button');
             const opTruckCancelStartButton = document.getElementById('op-truck-cancel-start-button');
-            const opTruckStepScreen = document.getElementById('op-truck-step-screen');
             const stepCounter = document.getElementById('step-counter');
             const stepInstruction = document.getElementById('step-instruction');
             const operatorNextButton = document.getElementById('operator-next-button');
             const operatorIncidentButton = document.getElementById('operator-incident-button');
             const operatorAbandonButton = document.getElementById('operator-abandon-button');
-            const opTruckReportScreen = document.getElementById('op-truck-report-screen');
             const reportContent = document.getElementById('report-content');
             const operatorWhatsappButton = document.getElementById('operator-whatsapp-button');
             const operatorEmailButton = document.getElementById('operator-email-button');
             const opTruckReportExitButton = document.getElementById('op-truck-report-exit-button');
-            const opJourneyReportScreen = document.getElementById('op-journey-report-screen');
             const journeyReportContent = document.getElementById('journey-report-content');
             const journeyWhatsappButton = document.getElementById('journey-whatsapp-button');
             const journeyEmailButton = document.getElementById('journey-email-button');
             const opJourneyReportExitButton = document.getElementById('op-journey-report-exit-button');
-
-            // --- ELEMENTOS DE INVENTARIO DE CIERRE (OPERARIO) ---
             const opStartInventoryButton = document.getElementById('op-start-inventory-button');
-            const opInventoryScreen = document.getElementById('op-inventory-screen');
-            const opInventoryList = document.getElementById('op-inventory-list');
             const opInventoryCodeInput = document.getElementById('op-inventory-code');
             const opInventoryQtyInput = document.getElementById('op-inventory-qty');
             const opAddInventoryItemButton = document.getElementById('op-add-inventory-item-button');
             const opGenerateInventoryReportButton = document.getElementById('op-generate-inventory-report-button');
-            const opInventoryReportScreen = document.getElementById('op-inventory-report-screen');
             const inventoryReportContent = document.getElementById('inventory-report-content');
             const inventoryWhatsappButton = document.getElementById('inventory-whatsapp-button');
             const inventoryEmailButton = document.getElementById('inventory-email-button');
             const opInventoryReportExitButton = document.getElementById('op-inventory-report-exit-button');
-            let currentInventory = {}; // Almacenamiento temporal de inventario del Operario
+            
 
+            // --- FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
+            window.initializeApplication = () => {
+                // Cargar datos desde localStorage
+                productDB = JSON.parse(localStorage.getItem(PRODUCT_DB_KEY)) || {};
+                truckDB = JSON.parse(localStorage.getItem(TRUCK_DB_KEY)) || {};
+                warehouseDB = JSON.parse(localStorage.getItem(WAREHOUSE_DB_KEY)) || {};
+                
+                showOfficeMode();
+                
+                if (SpeechRecognition) {
+                    recognition = new SpeechRecognition();
+                    recognition.lang = 'es-ES'; recognition.continuous = false; recognition.interimResults = false;
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        const time = formatTime(new Date());
+                        const stepText = currentLoadList[currentStep]?.desc || 'General';
+                        const incidentText = `${time} - Paso ${currentStep + 1} (${stepText}): "${transcript}"`;
+                        loadIncidents.push(incidentText);
+                        alert(`Incidencia registrada: "${transcript}"`);
+                    };
+                    recognition.onerror = (event) => alert('Error de micrófono: ' + event.error);
+                    recognition.onend = () => {
+                        operatorIncidentButton.textContent = 'Grabar Incidencia';
+                        operatorIncidentButton.classList.remove('listening');
+                        operatorIncidentButton.disabled = false;
+                    };
+                }
 
-            // --- BASES DE DATOS ---
-            let productDB = JSON.parse(localStorage.getItem(PRODUCT_DB_KEY)) || {};
-            let truckDB = JSON.parse(localStorage.getItem(TRUCK_DB_KEY)) || {};
-            let warehouseDB = JSON.parse(localStorage.getItem(WAREHOUSE_DB_KEY)) || {};
-
-            // --- ESTADO GLOBAL ---
-            let preparedPlans = [];
-            let journeyStartTime = null;
-            let allJourneyIncidents = [];
-            let operatorTrucksPending = [];
-            let operatorTrucksCompleted = [];
-
-            // --- ESTADO DE CARGA (Operario, para 1 camión) ---
-            let currentLoadList = [];
-            let currentTruckName = '';
-            let currentStep = 0;
-            let loadStartTime = null;
-            let loadIncidents = [];
-
-            // --- APIs DE VOZ ---
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let recognition;
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'es-ES'; recognition.continuous = false; recognition.interimResults = false;
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    const time = formatTime(new Date());
-                    const stepText = currentLoadList[currentStep]?.desc || 'General';
-                    const incidentText = `${time} - Paso ${currentStep + 1} (${stepText}): "${transcript}"`;
-                    loadIncidents.push(incidentText);
-                    alert(`Incidencia registrada: "${transcript}"`);
-                };
-                recognition.onerror = (event) => alert('Error de micrófono: ' + event.error);
-                recognition.onend = () => {
-                    operatorIncidentButton.textContent = 'Grabar Incidencia';
-                    operatorIncidentButton.classList.remove('listening');
-                    operatorIncidentButton.disabled = false;
-                };
+                assignApplicationEvents();
+                
+                setTimeout(() => {
+                    renderProductList();
+                    renderTruckList();
+                    renderWarehouseList();
+                    renderPreparedPlansList();
+                    resultDiv.innerHTML = 'Listo para procesar. Pega un pedido y pulsa "Procesar y Añadir a Lote".';
+                    resultDiv.className = '';
+                    transferTextContainer.style.display = 'none';
+                    warehouseCheckoutContainer.style.display = 'none';
+                }, 50);
             }
 
+
+            // Contenedor para la asignación de eventos
+            window.assignApplicationEvents = () => {
+                 // --- EVENTOS GLOBALES ---
+                toggleModeButton.addEventListener('click', toggleAppMode); 
+                assistanceButton.addEventListener('click', handleAssistance);
+
+                 // --- EVENTOS OFICINA ---
+                processButton.addEventListener('click', processPedido);
+                generateTransferButton.addEventListener('click', generateTransferText);
+                copyTransferTextButton.addEventListener('click', copyTransferText);
+                shareTransferWhatsappButton.addEventListener('click', () => shareReport('whatsapp', transferTextArea.value, ''));
+                clearPlansButton.addEventListener('click', clearPreparedPlans);
+                addProductButton.addEventListener('click', addProduct);
+                clearProductFormButton.addEventListener('click', clearProductForm);
+                clearProductsButton.addEventListener('click', clearAllProducts);
+                searchProductInput.addEventListener('input', () => setTimeout(renderProductList, 0));
+                exportProductsButton.addEventListener('click', exportProducts);
+                toggleCsvButton.addEventListener('click', toggleCsvImport);
+                importCsvButton.addEventListener('click', importCsvProducts);
+                addTruckButton.addEventListener('click', addTruck);
+                clearTrucksButton.addEventListener('click', clearAllTrucks);
+
+                // --- EVENTOS DE ALMACÉN ---
+                addWarehouseButton.addEventListener('click', addWarehouseProduct);
+                clearWarehouseButton.addEventListener('click', clearAllWarehouse);
+                searchWarehouseInput.addEventListener('input', () => setTimeout(renderWarehouseList, 0));
+                shareCheckoutWhatsappButton.addEventListener('click', () => {
+                    shareReport('whatsapp', checkoutReportContent.textContent, 'Aviso de Retiro');
+                });
+                toggleCsvWarehouseButton.addEventListener('click', toggleCsvWarehouseImport);
+                importCsvWarehouseButton.addEventListener('click', importCsvWarehouse);
+                exportWarehouseButton.addEventListener('click', exportWarehouse);
+
+                // --- EVENTOS OPERARIO ---
+                opStartJourneyButton.addEventListener('click', startJourney);
+                opLoadPlansButton.addEventListener('click', loadPlansFromText);
+                opTruckCancelStartButton.addEventListener('click', () => showOperatorScreen('op-truck-list-screen'));
+                opTruckStartButton.addEventListener('click', startTruckLoad);
+                operatorNextButton.addEventListener('click', () => { currentStep++; showStep(currentStep); });
+                operatorIncidentButton.addEventListener('click', recordIncident);
+                operatorAbandonButton.addEventListener('click', () => {
+                    if (confirm('¿Seguro que quieres abandonar la carga? Volverás a la lista.')) {
+                        speak('Carga abandonada');
+                        renderOperatorTruckList();
+                        showOperatorScreen('op-truck-list-screen');
+                    }
+                });
+                opTruckReportExitButton.addEventListener('click', () => {
+                    renderOperatorTruckList();
+                    showOperatorScreen('op-truck-list-screen');
+                });
+                opFinishJourneyButton.addEventListener('click', finishJourney);
+                opJourneyReportExitButton.addEventListener('click', () => showOperatorScreen('op-welcome-screen'));
+                operatorWhatsappButton.addEventListener('click', () => shareReport('whatsapp', reportContent.textContent, ''));
+                operatorEmailButton.addEventListener('click', () => shareReport('email', reportContent.textContent, `Informe de Carga - ${currentTruckName}`));
+                journeyWhatsappButton.addEventListener('click', () => shareReport('whatsapp', journeyReportContent.textContent, 'Informe de Jornada de Carga'));
+                journeyEmailButton.addEventListener('click', () => shareReport('email', journeyReportContent.textContent, 'Informe de Jornada de Carga'));
+                
+                // --- EVENTOS DE INVENTARIO DE CIERRE (OPERARIO) ---
+                opStartInventoryButton.addEventListener('click', startInventoryReport);
+                opAddInventoryItemButton.addEventListener('click', addInventoryItem);
+                opGenerateInventoryReportButton.addEventListener('click', generateInventoryReport);
+                inventoryWhatsappButton.addEventListener('click', () => shareReport('whatsapp', inventoryReportContent.textContent, 'Reporte de Inventario de Cierre'));
+                inventoryEmailButton.addEventListener('click', () => shareReport('email', inventoryReportContent.textContent, 'Reporte de Inventario de Cierre'));
+                opInventoryReportExitButton.addEventListener('click', () => showOperatorScreen('op-welcome-screen'));
+            }
+
+            // --- LÓGICA DE GESTIÓN DE MODOS ---
+
+            window.toggleAppMode = () => {
+                if (currentAppMode === 'office') {
+                    showOperatorMode();
+                } else {
+                    showOfficeMode();
+                }
+            };
+            
+            window.showOfficeMode = () => {
+                currentAppMode = 'office';
+                operatorModeDiv.style.display = 'none';
+                officeModeDiv.style.display = 'grid';
+                document.body.style.backgroundColor = 'var(--color-fondo)';
+                toggleModeButton.textContent = 'Cambiar a Modo Operario'; 
+            };
+
+            window.showOperatorMode = () => {
+                currentAppMode = 'operator';
+                officeModeDiv.style.display = 'none';
+                operatorModeDiv.style.display = 'block';
+                showOperatorScreen('op-welcome-screen');
+                document.body.style.backgroundColor = '#2c3e50';
+                toggleModeButton.textContent = 'Cambiar a Modo Oficina'; 
+            };
+
+            // --- LÓGICA DE ASISTENCIA ---
+            const handleAssistance = () => {
+                const phone = '34643734158'; // Número directo sin el "+"
+                const problem = prompt('Por favor, describe brevemente tu problema de asistencia (WhatsApp):');
+
+                if (problem) {
+                    const mode = currentAppMode === 'office' ? 'Oficina' : 'Operario';
+                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v20, Modo ${mode}).\n\nProblema: ${problem}`;
+                    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
+                }
+            };
+            
             // --- LÓGICA DE PESTAÑAS (OFICINA) ---
             window.openTab = (tabName, elmnt) => {
                 let i, tabcontent, tablinks;
@@ -697,12 +850,13 @@ input[type="number"] { width: 100px; }
                 document.getElementById(tabName).style.display = "block";
                 elmnt.className += " active";
                 if(tabName === 'tab-view-products') {
-                    // Mueve la tarea potencialmente pesada (renderizado) a la cola de eventos
                     setTimeout(renderProductList, 0); 
                 }
             }
 
-            // --- GESTIÓN DE PRODUCTOS (OFICINA) ---
+            // --- LÓGICA DE BBDD Y VISTAS (Resto de su código V18) ---
+            // (Se mantiene toda la lógica de V18, incluyendo CRUD de productos, camiones, almacén, Procesador de Pedidos, y el Modo Operario completo, para asegurar la funcionalidad pre-Firebase)
+
             const saveProducts = () => localStorage.setItem(PRODUCT_DB_KEY, JSON.stringify(productDB));
             const clearProductForm = () => {
                 productCodeInput.value = ''; productDescInput.value = ''; productVolumeInput.value = '';
@@ -718,8 +872,6 @@ input[type="number"] { width: 100px; }
                 productDB[code] = { desc, volume };
                 saveProducts(); clearProductForm();
 
-                // 🌟 MITIGACIÓN DE RENDIMIENTO: Usamos setTimeout(..., 0) para liberar el hilo principal.
-                // La alerta se mostrará de inmediato, y el renderizado (tarea pesada) se hará después.
                 setTimeout(() => {
                     if (document.getElementById('tab-view-products').classList.contains('active')) {
                         searchProductInput.value = code;
@@ -779,7 +931,7 @@ input[type="number"] { width: 100px; }
                     const p = productDB[code]; csvContent += `${code},"${p.desc.replace(/"/g, '""')}",${p.volume}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "productos_carga_v18.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "productos_carga_v20.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
             const toggleCsvImport = () => {
@@ -846,7 +998,7 @@ input[type="number"] { width: 100px; }
                 truckNames.forEach(name => {
                     const truck = truckDB[name]; const item = document.createElement('div'); item.className = 'db-item';
                     item.innerHTML = `
-                        <span class="db-item-desc"><strong>${name}</strong></span>
+                        <span class="db-item-desc" style="flex-basis: 150px;"><strong>${name}</strong></span>
                         <span>${truck.capacity.toFixed(2)} m³</span>
                         <div><button onclick="editTruck('${name}')" class="secondary">Editar</button>
                              <button onclick="deleteTruck('${name}')" class="danger">X</button></div>`;
@@ -933,7 +1085,6 @@ input[type="number"] { width: 100px; }
                 }
             };
 
-            // --- NUEVA LÓGICA DE EXPORTACIÓN/IMPORTACIÓN DE ALMACÉN (Inventario de Cierre) ---
             const toggleCsvWarehouseImport = () => {
                 csvPasteWarehouseArea.style.display = (csvPasteWarehouseArea.style.display === 'none' || csvPasteWarehouseArea.style.display === '') ? 'block' : 'none';
                 toggleCsvWarehouseButton.textContent = csvPasteWarehouseArea.style.display === 'block' ? 'Ocultar Importación (CSV)' : 'Importar CSV (Actualización Masiva)';
@@ -942,12 +1093,11 @@ input[type="number"] { width: 100px; }
             const importCsvWarehouse = () => {
                 const text = csvWarehouseInput.value.trim(); if (!text) return;
                 const lines = text.split('\n'); let updatedCount = 0, errorCount = 0;
-                let isFirstLine = true; // Para ignorar el encabezado 'Codigo,Cantidad'
+                let isFirstLine = true; 
 
                 lines.forEach(line => {
-                    if (isFirstLine) { isFirstLine = false; return; } // Ignorar encabezado
+                    if (isFirstLine) { isFirstLine = false; return; } 
                     
-                    // Formato esperado: Codigo,Cantidad
                     const parts = line.split(',').map(p => p.trim().replace(/"/g, ''));
                     if (parts && parts.length === 2) {
                         try {
@@ -956,7 +1106,7 @@ input[type="number"] { width: 100px; }
 
                             if (productDB[code] && !isNaN(qty) && qty >= 0) {
                                 warehouseDB[code] = { qty, desc: productDB[code].desc };
-                                if (qty === 0) delete warehouseDB[code]; // Eliminar si el stock es cero
+                                if (qty === 0) delete warehouseDB[code]; 
                                 updatedCount++;
                             } else { errorCount++; }
                         } catch (e) { errorCount++; }
@@ -972,46 +1122,33 @@ input[type="number"] { width: 100px; }
             };
 
             const exportWarehouse = () => {
-                let csvContent = "data:text/csv;charset=utf-8,Codigo,Existencia\n"; // Formato simple para la reimportación
+                let csvContent = "data:text/csv;charset=utf-8,Codigo,Existencia\n"; 
                 Object.keys(warehouseDB).sort().forEach(code => {
                     const w = warehouseDB[code]; csvContent += `${code},${w.qty}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "inventario_almacen_v18.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "inventario_almacen_v20.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
-            // --- FIN NUEVA LÓGICA DE ALMACÉN ---
 
             // --- PROCESADOR DE PEDIDOS (OFICINA) - LÓGICA V18 ---
-
             const parsePedido = (text) => {
                 const lines = text.split('\n');
                 const products = new Map();
                 let truckName = null;
                 const truckRegex = /Camión:\s*(.+)/i;
-
                 const productRegexComma = /^\s*(\d+(\.\d+)?|\d+\.\d+\s+\d{4,})\s*,\s*(\s*\S+)\s*(.+)$/;
                 const productRegexNoQty = /^\s*(\d{4,})\s+(.+)$/;
                 const productRegexQtyCode = /^\s*(\d+(\.\d+)?|\d+\.\d+)\s+(\d{4,})\s*(.+)$/;
-
                 lines.forEach(line => {
                     let match;
-
                     match = line.match(truckRegex);
-                    if (match) {
-                        truckName = match[1].trim();
-                        return;
-                    }
-
-                    let qty = 0;
-                    let code = null;
-                    let desc = null;
-
+                    if (match) { truckName = match[1].trim(); return; }
+                    let qty = 0; let code = null; let desc = null;
                     match = line.match(productRegexComma);
                     if (match) {
                         let qtyPart = match[1].trim();
                         let descPart = match[4].trim();
-
                         if (!isNaN(parseFloat(qtyPart))) {
                             qty = parseFloat(qtyPart);
                             const codeMatch = descPart.match(/^(\d{4,})\s*(.*)$/);
@@ -1021,7 +1158,6 @@ input[type="number"] { width: 100px; }
                             }
                         }
                     }
-
                     if (!code) {
                         match = line.match(productRegexQtyCode);
                         if (match) {
@@ -1030,7 +1166,6 @@ input[type="number"] { width: 100px; }
                             desc = match[4].trim();
                         }
                     }
-
                     if (!code) {
                         match = line.match(productRegexNoQty);
                         if (match) {
@@ -1039,8 +1174,6 @@ input[type="number"] { width: 100px; }
                             qty = 1.0;
                         }
                     }
-
-                    // Intento de Regex Full si las anteriores fallan (Simplificado para evitar duplicados complejos)
                     if (!code) {
                         const productRegexFull = /^\s*(\d+(\.\d+)?|\d+\.\d+\s+\d{4,})\s+-\s+(.+)$/;
                         match = line.match(productRegexFull);
@@ -1054,12 +1187,9 @@ input[type="number"] { width: 100px; }
                             }
                         }
                     }
-
-
                     if (qty > 0 && code && desc && !desc.toLowerCase().startsWith('total')) {
                         code = code.match(/\d+/)?.[0] || code;
                         desc = desc.replace(/,$/, '').trim();
-
                         products.set(code, {
                             qty: (products.get(code)?.qty || 0) + qty,
                             desc: products.get(code)?.desc || desc
@@ -1073,18 +1203,17 @@ input[type="number"] { width: 100px; }
                 const text = pedidoInput.value;
                 if (!text.trim()) { resultDiv.innerHTML = 'El área del pedido está vacía.'; resultDiv.className = 'error'; return; }
                 const { products, truckName } = parsePedido(text);
+                if (!truckName || !truckDB[truckName] || products.size === 0) {
+                     resultDiv.innerHTML = `<strong>Error: Revise el nombre del camión o si se detectaron productos.</strong>`; 
+                     resultDiv.className = 'error'; importNotificationDiv.style.display = 'none'; return;
+                }
 
-                // 1. Verificación Inicial
-                if (!truckName) { resultDiv.innerHTML = `<strong>Error: No se pudo detectar el nombre del camión.</strong>`; resultDiv.className = 'error'; importNotificationDiv.style.display = 'none'; return; }
                 const truck = truckDB[truckName];
-                if (!truck) { resultDiv.innerHTML = `<strong>Error: Camión "${truckName}" no encontrado.</strong>`; resultDiv.className = 'error'; importNotificationDiv.style.display = 'none'; return; }
-                if (products.size === 0) { resultDiv.innerHTML = `<strong>Error: No se encontraron productos.</strong>`; resultDiv.className = 'error'; importNotificationDiv.style.display = 'none'; return; }
                 if (preparedPlans.find(p => p.truckName === truckName)) { resultDiv.innerHTML = `<strong>Error: El camión "${truckName}" ya está en el lote de carga.</strong><br>Limpia el lote si quieres empezar de nuevo.`; resultDiv.className = 'error'; return; }
 
                 let productListForLoading = [];
                 let importedProducts = [];
                 let productsToCheckout = [];
-
                 const DEFAULT_VOLUME = 0.0001;
                 let totalVolume = 0;
 
@@ -1096,7 +1225,6 @@ input[type="number"] { width: 100px; }
                     let itemVolume = DEFAULT_VOLUME;
                     let itemDesc = data.desc;
 
-                    // A. Revisar existencia del producto en la DB de Productos (y añadir si es nuevo)
                     if (!productData) {
                         productDB[code] = { desc: data.desc, volume: DEFAULT_VOLUME };
                         importedProducts.push(code);
@@ -1104,40 +1232,27 @@ input[type="number"] { width: 100px; }
                         itemVolume = productData.volume; itemDesc = productData.desc;
                     }
 
-                    // --- B. LÓGICA DE SUMINISTRO COMPUESTO (V18) ---
-
-                    // Cantidad a retirar del Almacén Propio: Mínimo entre lo requerido y lo disponible.
                     const qtyFromPropio = Math.min(requiredQtyTotal, availableQtyPropio);
-
-                    // Cantidad a retirar del Almacén General: Lo que falta para completar el pedido (asumimos que siempre está disponible).
                     const qtyFromGeneral = requiredQtyTotal - qtyFromPropio;
 
-                    // C. Preparar lista de productos para el checkout (retiro físico)
                     if (qtyFromPropio > 0) {
                         productsToCheckout.push({ code, desc: itemDesc, qty: qtyFromPropio });
                     }
 
-                    // D. El producto para la carga es la CANTIDAD TOTAL del pedido.
                     productListForLoading.push({
-                        code,
-                        desc: itemDesc,
-                        qty: requiredQtyTotal,
+                        code, desc: itemDesc, qty: requiredQtyTotal,
                         totalVolume: requiredQtyTotal * itemVolume,
-                        qtyPropio: qtyFromPropio,
-                        qtyGeneral: qtyFromGeneral
+                        qtyPropio: qtyFromPropio, qtyGeneral: qtyFromGeneral
                     });
 
                     totalVolume += requiredQtyTotal * itemVolume;
                 });
-
-                // --- 2. RESTA DE STOCK (CHECKOUT INMEDIATO) Y GENERACIÓN DE INFORME ---
 
                 let checkoutReport = `--- RETIRO DE ALMACÉN PROPIO ---\n\n`;
                 checkoutReport += `Pedido para Camión: ${truckName}\n`;
                 checkoutReport += `Capacidad del Camión: ${truck.capacity.toFixed(2)} m³\n`;
 
                 if (productsToCheckout.length > 0) {
-                    // Resta del Inventario Propio
                     productsToCheckout.forEach(item => {
                          if (warehouseDB[item.code]) {
                              warehouseDB[item.code].qty -= item.qty;
@@ -1159,14 +1274,12 @@ input[type="number"] { width: 100px; }
                     warehouseCheckoutContainer.style.display = 'block';
                 } else {
                     checkoutReport += `\nLa carga no requiere extracción de Stock Propio.`;
-                    warehouseCheckoutContainer.style.display = 'block'; // Mostrar siempre el aviso, incluso si no hay nada que retirar.
+                    warehouseCheckoutContainer.style.display = 'block'; 
                 }
 
                 checkoutReportContent.textContent = checkoutReport;
                 shareCheckoutWhatsappButton.onclick = () => shareReport('whatsapp', checkoutReport, `Aviso de Retiro - ${truckName}`);
 
-                // --- 3. VERIFICACIÓN DE CAPACIDAD (Punto de fallo final) ---
-                productListForLoading.sort((a, b) => b.totalVolume - a.totalVolume);
                 const remainingCapacity = truck.capacity - totalVolume;
 
                 let resultHTML = `<h3>Resultados para: ${truckName} (Cap: ${truck.capacity.toFixed(2)} m³)</h3>`;
@@ -1176,26 +1289,20 @@ input[type="number"] { width: 100px; }
                     resultHTML += `<h2><span style="font-size: 2.5rem;">❌</span> ¡LA CARGA NO CABE!</h2>`;
                     resultHTML += `<p>El volumen total del pedido (${totalVolume.toFixed(4)} m³) excede la capacidad del camión.</p>`;
                     resultHTML += `<p><strong>Volumen Excedido: ${Math.abs(remainingCapacity).toFixed(4)} m³</strong></p>`;
-
-                    // ADVERTENCIA DE REVERSIÓN DE STOCK
                     resultHTML += `<p style="color:red; font-weight:bold;">¡ADVERTENCIA! El stock Propio ya fue restado. Si el pedido es cancelado o modificado, debe reingresar manualmente la cantidad en la sección 4: ${productsToCheckout.length} productos afectados.</p>`;
-
                     resultDiv.innerHTML = resultHTML;
                     pedidoInput.value = '';
                     if (importedProducts.length > 0) { saveProducts(); importNotificationDiv.innerHTML = `<strong>¡Productos Importados!</strong><br>Se han añadido ${importedProducts.length} productos nuevos. <strong>Acción Requerida:</strong> Actualiza sus volúmenes.`; importNotificationDiv.style.display = 'block'; }
-                    return; // DETIENE EL PROCESO
+                    return; 
                 }
 
-                // --- 4. ÉXITO (Añadir al Lote) ---
                 resultDiv.className = 'success';
                 resultHTML += `<h2><span style="font-size: 2.5rem;">✅</span> ¡AÑADIDO AL LOTE!</h2>`;
                 resultHTML += `<p><strong>Camión: ${truckName}</strong> | <strong>Volumen Total: ${totalVolume.toFixed(4)} m³</strong></p>`;
 
-                // 4.1. GUARDAR PLAN
                 const newPlan = { truckName, loadList: productListForLoading };
                 preparedPlans.push(newPlan);
 
-                // 4.2. NOTIFICACIÓN DE IMPORTACIÓN DE PRODUCTOS
                 if (importedProducts.length > 0) {
                     saveProducts();
                     importNotificationDiv.innerHTML = `<strong>¡Productos Importados!</strong><br>Se han añadido ${importedProducts.length} productos nuevos. <strong>Acción Requerida:</strong> Actualiza sus volúmenes.`;
@@ -1212,7 +1319,7 @@ input[type="number"] { width: 100px; }
 
                 resultDiv.innerHTML = resultHTML;
                 renderPreparedPlansList();
-                pedidoInput.value = ''; // Limpiar el input después de procesar
+                pedidoInput.value = ''; 
             };
 
             // --- Lógica de Lotes (Oficina) ---
@@ -1259,57 +1366,17 @@ input[type="number"] { width: 100px; }
                     resultDiv.className = '';
                     transferTextContainer.style.display = 'none';
                     importNotificationDiv.style.display = 'none';
-                    warehouseCheckoutContainer.style.display = 'none'; // Ocultar el aviso de checkout al limpiar el lote
+                    warehouseCheckoutContainer.style.display = 'none'; 
                 }
             };
 
-            // --- LÓGICA DE CAMBIO DE MODO Y ASISTENCIA (Global) ---
-            const showOfficeMode = () => {
-                operatorModeDiv.style.display = 'none';
-                officeModeDiv.style.display = 'grid';
-                toggleModeButton.textContent = 'Cambiar a Modo Operario';
-                document.body.style.backgroundColor = 'var(--color-fondo)';
-            };
+            // --- LÓGICA MODO OPERARIO (Funcionalidad V18) ---
 
-            const showOperatorMode = () => {
-                officeModeDiv.style.display = 'none';
-                operatorModeDiv.style.display = 'block';
-                showOperatorScreen('op-welcome-screen');
-                toggleModeButton.textContent = 'Volver a Modo Oficina';
-                document.body.style.backgroundColor = '#2c3e50';
-            };
-
-            toggleModeButton.addEventListener('click', () => {
-                if (officeModeDiv.style.display === 'grid') {
-                    showOperatorMode();
-                } else {
-                    if (journeyStartTime === null || confirm('¿Salir del Modo Operario? Se perderá el progreso de la jornada.')) {
-                        showOfficeMode();
-                    }
-                }
-            });
-
-            assistanceButton.addEventListener('click', () => {
-                const phone = '+34643734158';
-                const problem = prompt('Por favor, describe brevemente tu problema de asistencia (WhatsApp):');
-
-                if (problem) {
-                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v18).\n\nProblema: ${problem}`;
-                    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-                    window.open(url, '_blank');
-                }
-            });
-
-            // --- LÓGICA MODO OPERARIO ---
-
-            const showOperatorScreenImpl = (screenId) => {
+            window.formatTime = (date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            window.showOperatorScreen = (screenId) => {
                 document.querySelectorAll('.operator-screen').forEach(s => s.style.display = 'none');
                 document.getElementById(screenId).style.display = 'flex';
             };
-            window.showOperatorScreen = showOperatorScreenImpl;
-
-            window.formatTime = (date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
             window.speak = (text) => {
                 if (!('speechSynthesis' in window)) { return; }
                 window.speechSynthesis.cancel();
@@ -1353,6 +1420,7 @@ input[type="number"] { width: 100px; }
                 if (operatorTrucksPending.length === 0) {
                     opTruckListContainer.innerHTML = '<p>¡No quedan camiones pendientes!</p>';
                     opFinishJourneyButton.style.display = 'block';
+                    opStartInventoryButton.style.display = 'block'; // Mostrar si no hay camiones
                 } else {
                     operatorTrucksPending.forEach(plan => {
                         const button = document.createElement('button');
@@ -1362,6 +1430,7 @@ input[type="number"] { width: 100px; }
                         opTruckListContainer.appendChild(button);
                     });
                     opFinishJourneyButton.style.display = 'none';
+                    opStartInventoryButton.style.display = 'none'; // Ocultar si hay camiones pendientes
                 }
             };
 
@@ -1387,7 +1456,6 @@ input[type="number"] { width: 100px; }
                 }
                 const item = currentLoadList[index];
 
-                // NOTA: La instrucción ahora es más detallada
                 let instruction = `Cargar ${item.qty.toFixed(1)} uds - ${item.code} (${item.desc})`;
                 if (item.qtyPropio > 0) {
                      instruction += ` (Recuerda que ${item.qtyPropio.toFixed(1)} uds. vienen del ALMACÉN PROPIO)`;
@@ -1476,7 +1544,6 @@ input[type="number"] { width: 100px; }
                 const text = textContent;
                 let url = '';
                 if (via === 'whatsapp') {
-                    // Limpia el texto para WhatsApp (solo permite espacios, saltos de línea y texto)
                     const cleanText = text.replace(/(\t|\r)/g, '').trim();
                     url = `https://wa.me/?text=${encodeURIComponent(cleanText)}`;
                 } else {
@@ -1489,7 +1556,7 @@ input[type="number"] { width: 100px; }
 
             window.startInventoryReport = () => {
                 currentInventory = {};
-                opInventoryList.innerHTML = '<p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>';
+                document.getElementById('op-inventory-list').innerHTML = '<p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>';
                 opInventoryCodeInput.value = '';
                 opInventoryQtyInput.value = '';
                 showOperatorScreen('op-inventory-screen');
@@ -1503,12 +1570,10 @@ input[type="number"] { width: 100px; }
                 if (!code) { alert('Código es obligatorio.'); return; }
                 if (isNaN(qty) || qty < 0) { alert('Cantidad debe ser un número positivo.'); return; }
 
-                // El Operario no necesita la DB de Productos, pero es bueno tener una descripción.
                 const desc = productDB[code] ? productDB[code].desc : 'Producto Desconocido (verificar)';
 
                 currentInventory[code] = { qty, desc };
 
-                // Limpiar y Enfocar para la siguiente entrada
                 opInventoryCodeInput.value = '';
                 opInventoryQtyInput.value = '';
                 opInventoryCodeInput.focus();
@@ -1516,6 +1581,7 @@ input[type="number"] { width: 100px; }
             };
 
             const renderCurrentInventoryList = () => {
+                const opInventoryList = document.getElementById('op-inventory-list');
                 opInventoryList.innerHTML = '';
                 const codes = Object.keys(currentInventory);
                 if (codes.length === 0) {
@@ -1543,9 +1609,8 @@ input[type="number"] { width: 100px; }
                 let report = `--- REPORTE DE INVENTARIO DE CIERRE ---\n\n`;
                 report += `Fecha: ${new Date().toLocaleDateString('es-ES')}\n\n`;
                 report += `INSTRUCCIÓN PARA OFICINA: Pegar el CSV a continuación en la opción 'Importar CSV (Actualización Masiva)'\n\n`;
-                report += `Codigo,Cantidad\n`; // Encabezado de CSV para la importación fácil
+                report += `Codigo,Cantidad\n`; 
                 
-                // Generación del CSV
                 codes.forEach(code => {
                     report += `${code},${currentInventory[code].qty}\n`;
                 });
@@ -1555,81 +1620,8 @@ input[type="number"] { width: 100px; }
                 speak('Reporte de inventario generado. Listo para enviar.');
             };
 
-            // --- ASIGNACIÓN DE EVENTOS (OFICINA) ---
-            processButton.addEventListener('click', processPedido);
-            generateTransferButton.addEventListener('click', generateTransferText);
-            copyTransferTextButton.addEventListener('click', copyTransferText);
-            clearPlansButton.addEventListener('click', clearPreparedPlans);
-            addProductButton.addEventListener('click', addProduct);
-            clearProductFormButton.addEventListener('click', clearProductForm);
-            clearProductsButton.addEventListener('click', clearAllProducts);
-            searchProductInput.addEventListener('input', () => setTimeout(renderProductList, 0));
-            exportProductsButton.addEventListener('click', exportProducts);
-            toggleCsvButton.addEventListener('click', toggleCsvImport);
-            importCsvButton.addEventListener('click', importCsvProducts);
-            addTruckButton.addEventListener('click', addTruck);
-            clearTrucksButton.addEventListener('click', clearAllTrucks);
-
-            // --- EVENTOS DE ALMACÉN ---
-            addWarehouseButton.addEventListener('click', addWarehouseProduct);
-            clearWarehouseButton.addEventListener('click', clearAllWarehouse);
-            searchWarehouseInput.addEventListener('input', () => setTimeout(renderWarehouseList, 0));
-            shareCheckoutWhatsappButton.addEventListener('click', () => {
-                const report = checkoutReportContent.textContent;
-                // shareReport obtiene el nombre del camión del contenido del reporte
-                shareReport('whatsapp', report, 'Aviso de Retiro');
-            });
-            toggleCsvWarehouseButton.addEventListener('click', toggleCsvWarehouseImport);
-            importCsvWarehouseButton.addEventListener('click', importCsvWarehouse);
-            exportWarehouseButton.addEventListener('click', exportWarehouse);
-
-
-            // --- ASIGNACIÓN DE EVENTOS (OPERARIO) ---
-            opStartJourneyButton.addEventListener('click', startJourney);
-            opLoadPlansButton.addEventListener('click', loadPlansFromText);
-            opTruckCancelStartButton.addEventListener('click', () => showOperatorScreen('op-truck-list-screen'));
-            opTruckStartButton.addEventListener('click', startTruckLoad);
-            operatorNextButton.addEventListener('click', () => { currentStep++; showStep(currentStep); });
-            operatorIncidentButton.addEventListener('click', recordIncident);
-            operatorAbandonButton.addEventListener('click', () => {
-                if (confirm('¿Seguro que quieres abandonar la carga? Volverás a la lista.')) {
-                    speak('Carga abandonada');
-                    renderOperatorTruckList();
-                    showOperatorScreen('op-truck-list-screen');
-                }
-            });
-            opTruckReportExitButton.addEventListener('click', () => {
-                renderOperatorTruckList();
-                showOperatorScreen('op-truck-list-screen');
-            });
-            opFinishJourneyButton.addEventListener('click', finishJourney);
-            opJourneyReportExitButton.addEventListener('click', () => showOperatorScreen('op-welcome-screen'));
-
-            operatorWhatsappButton.addEventListener('click', () => shareReport('whatsapp', reportContent.textContent, ''));
-            operatorEmailButton.addEventListener('click', () => shareReport('email', reportContent.textContent, `Informe de Carga - ${currentTruckName}`));
-            journeyWhatsappButton.addEventListener('click', () => shareReport('whatsapp', journeyReportContent.textContent, ''));
-            journeyEmailButton.addEventListener('click', () => shareReport('email', journeyReportContent.textContent, 'Informe de Jornada de Carga'));
-            
-            // --- EVENTOS DE INVENTARIO DE CIERRE (OPERARIO) ---
-            opStartInventoryButton.addEventListener('click', startInventoryReport);
-            opAddInventoryItemButton.addEventListener('click', addInventoryItem);
-            opGenerateInventoryReportButton.addEventListener('click', generateInventoryReport);
-            inventoryWhatsappButton.addEventListener('click', () => shareReport('whatsapp', inventoryReportContent.textContent, 'Reporte de Inventario de Cierre'));
-            inventoryEmailButton.addEventListener('click', () => shareReport('email', inventoryReportContent.textContent, 'Reporte de Inventario de Cierre'));
-            opInventoryReportExitButton.addEventListener('click', () => showOperatorScreen('op-welcome-screen'));
-
-            // --- RENDERIZADO INICIAL ---
-            setTimeout(() => {
-                renderProductList();
-                renderTruckList();
-                renderWarehouseList();
-                renderPreparedPlansList();
-                resultDiv.innerHTML = 'Listo para procesar. Pega un pedido y pulsa "Procesar y Añadir a Lote".';
-                resultDiv.className = '';
-                showOfficeMode();
-            }, 50);
+            // --- FIN DE DOMContentLoaded ---
         });
     </script>
-
 </body>
 </html>
