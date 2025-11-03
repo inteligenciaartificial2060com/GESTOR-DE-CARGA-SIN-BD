@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Carga v20 (Estética y Acceso Provisional)</title>
+    <title>Gestión de Carga v21 (Correcciones y Ajustes)</title>
     
     <style>
 /* --- ESTILOS GENERALES --- */
@@ -80,7 +80,7 @@ h2 { margin-top: 10px; }
 /* 3. Ajuste de Espaciado: BD Camiones y Almacén */
 #truck-manager, #warehouse-manager {
     grid-column: span 1;
-    padding: 10px 25px; /* Reducido a 10px arriba/abajo */
+    padding: 10px 25px; 
 }
 
 #main-processor {
@@ -181,14 +181,13 @@ input[type="number"] { width: 100px; }
     font-size: 0.9rem; 
     word-break: break-word; 
     padding-right: 10px; 
-    /* 2. Ajuste de Alineación en BD Productos/Camiones */
     display: inline-block; 
     text-align: left; 
 }
-.db-item span:nth-child(1) { flex-basis: 100px; } /* Código: Más espacio */
-.db-item .db-item-desc { flex-grow: 1; flex-basis: 150px;} /* Descripción: Más espacio */
+.db-item span:nth-child(1) { flex-basis: 100px; } 
+.db-item .db-item-desc { flex-grow: 1; flex-basis: 150px;} 
 .db-item button { padding: 5px 8px; font-size: 0.8rem; margin-right: 0; margin-left: 5px; }
-.db-item .danger { padding: 5px 8px; font-weight: bold; } /* Botón 'X' más robusto */
+.db-item .danger { padding: 5px 8px; font-weight: bold; } 
 
 .tab-content { display: none; }
 .tab-content.active { display: block; }
@@ -297,19 +296,26 @@ input[type="number"] { width: 100px; }
     align-items: center;
 }
 #op-inventory-list li:last-child { border-bottom: none; }
+#op-inventory-list li strong:nth-child(1) { flex-basis: 70px; flex-shrink: 0; } 
+#op-inventory-list li span { flex-grow: 1; word-break: break-word; }
 
 /* 5. Ajuste de Estética del Formulario de Inventario */
 #op-inventory-screen .form-inline {
     max-width: 400px; width: 100%; margin-bottom: 20px;
     justify-content: center;
 }
-#op-inventory-code { width: 150px; flex-grow: 0; } /* +6 espacios */
-#op-inventory-qty { width: 90px; flex-grow: 0; } /* -15 espacios */
+#op-inventory-code { width: 150px; flex-grow: 0; } 
+#op-inventory-qty { width: 90px; flex-grow: 0; } 
 #op-add-inventory-item-button { 
     padding: 10px 15px; 
     font-size: 1rem; 
-    margin-left: 5px; /* -10 espacios */
+    margin-left: 5px; 
     flex-shrink: 0;
+}
+#op-inventory-list .danger {
+    padding: 5px 8px; 
+    font-size: 0.8rem;
+    margin-left: 5px; /* Ajuste para reducir el espacio */
 }
 
 
@@ -342,7 +348,7 @@ input[type="number"] { width: 100px; }
         </div>
 
         <div id="office-mode">
-            <h1>Gestor de Carga (v20 - Provisional)</h1>
+            <h1>Gestor de Carga (v21 - Provisional)</h1>
 
             <div id="main-processor" class="container">
                 <h2>1. Procesador de Pedidos</h2>
@@ -545,7 +551,6 @@ input[type="number"] { width: 100px; }
 
         const PASSWORD_PROVISIONAL = '1234'; 
         
-        // ⚠️ REINCORPORADA LA FUNCIÓN DE ACCESO PROVISIONAL
         function verificarAccesoProvisional() {
             const acceso = localStorage.getItem('acceso_provisional');
             if (acceso !== 'permitido') {
@@ -565,13 +570,14 @@ input[type="number"] { width: 100px; }
         }
         
         // ==============================================================================
-        //  💡 CONSTANTES Y LÓGICA V20 (LocalStorage)
+        //  💡 CONSTANTES Y LÓGICA V21 (LocalStorage)
         // ==============================================================================
 
         // --- CONSTANTES DE ALMACENAMIENTO ---
         const PRODUCT_DB_KEY = 'productDB_v16';
         const TRUCK_DB_KEY = 'truckDB_v16';
         const WAREHOUSE_DB_KEY = 'warehouseDB_v16';
+        const ASSISTANCE_PHONE = '34643734158'; // Teléfono para el botón '?'
 
         // --- ELEMENTOS DEL DOM (GLOBAL) ---
         let toggleModeButton;
@@ -743,7 +749,7 @@ input[type="number"] { width: 100px; }
                 processButton.addEventListener('click', processPedido);
                 generateTransferButton.addEventListener('click', generateTransferText);
                 copyTransferTextButton.addEventListener('click', copyTransferText);
-                shareTransferWhatsappButton.addEventListener('click', () => shareReport('whatsapp', transferTextArea.value, ''));
+                shareTransferWhatsappButton.addEventListener('click', () => shareReport('whatsapp', transferTextArea.value, 'Texto de Transferencia para Operario'));
                 clearPlansButton.addEventListener('click', clearPreparedPlans);
                 addProductButton.addEventListener('click', addProduct);
                 clearProductFormButton.addEventListener('click', clearProductForm);
@@ -760,7 +766,7 @@ input[type="number"] { width: 100px; }
                 clearWarehouseButton.addEventListener('click', clearAllWarehouse);
                 searchWarehouseInput.addEventListener('input', () => setTimeout(renderWarehouseList, 0));
                 shareCheckoutWhatsappButton.addEventListener('click', () => {
-                    shareReport('whatsapp', checkoutReportContent.textContent, 'Aviso de Retiro');
+                    shareReport('whatsapp', checkoutReportContent.textContent, `Aviso de Retiro - ${currentTruckName || 'Lote Procesado'}`);
                 });
                 toggleCsvWarehouseButton.addEventListener('click', toggleCsvWarehouseImport);
                 importCsvWarehouseButton.addEventListener('click', importCsvWarehouse);
@@ -786,7 +792,7 @@ input[type="number"] { width: 100px; }
                 });
                 opFinishJourneyButton.addEventListener('click', finishJourney);
                 opJourneyReportExitButton.addEventListener('click', () => showOperatorScreen('op-welcome-screen'));
-                operatorWhatsappButton.addEventListener('click', () => shareReport('whatsapp', reportContent.textContent, ''));
+                operatorWhatsappButton.addEventListener('click', () => shareReport('whatsapp', reportContent.textContent, `Informe de Carga - ${currentTruckName}`));
                 operatorEmailButton.addEventListener('click', () => shareReport('email', reportContent.textContent, `Informe de Carga - ${currentTruckName}`));
                 journeyWhatsappButton.addEventListener('click', () => shareReport('whatsapp', journeyReportContent.textContent, 'Informe de Jornada de Carga'));
                 journeyEmailButton.addEventListener('click', () => shareReport('email', journeyReportContent.textContent, 'Informe de Jornada de Carga'));
@@ -829,12 +835,12 @@ input[type="number"] { width: 100px; }
 
             // --- LÓGICA DE ASISTENCIA ---
             const handleAssistance = () => {
-                const phone = '34643734158'; // Número directo sin el "+"
+                const phone = ASSISTANCE_PHONE; 
                 const problem = prompt('Por favor, describe brevemente tu problema de asistencia (WhatsApp):');
 
                 if (problem) {
                     const mode = currentAppMode === 'office' ? 'Oficina' : 'Operario';
-                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v20, Modo ${mode}).\n\nProblema: ${problem}`;
+                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v21, Modo ${mode}).\n\nProblema: ${problem}`;
                     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
                     window.open(url, '_blank');
                 }
@@ -855,8 +861,7 @@ input[type="number"] { width: 100px; }
             }
 
             // --- LÓGICA DE BBDD Y VISTAS (Resto de su código V18) ---
-            // (Se mantiene toda la lógica de V18, incluyendo CRUD de productos, camiones, almacén, Procesador de Pedidos, y el Modo Operario completo, para asegurar la funcionalidad pre-Firebase)
-
+            
             const saveProducts = () => localStorage.setItem(PRODUCT_DB_KEY, JSON.stringify(productDB));
             const clearProductForm = () => {
                 productCodeInput.value = ''; productDescInput.value = ''; productVolumeInput.value = '';
@@ -931,7 +936,7 @@ input[type="number"] { width: 100px; }
                     const p = productDB[code]; csvContent += `${code},"${p.desc.replace(/"/g, '""')}",${p.volume}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "productos_carga_v20.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "productos_carga_v21.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
             const toggleCsvImport = () => {
@@ -1086,9 +1091,11 @@ input[type="number"] { width: 100px; }
             };
 
             const toggleCsvWarehouseImport = () => {
-                csvPasteWarehouseArea.style.display = (csvPasteWarehouseArea.style.display === 'none' || csvPasteWarehouseArea.style.display === '') ? 'block' : 'none';
-                toggleCsvWarehouseButton.textContent = csvPasteWarehouseArea.style.display === 'block' ? 'Ocultar Importación (CSV)' : 'Importar CSV (Actualización Masiva)';
+                const isVisible = csvPasteWarehouseArea.style.display === 'block';
+                csvPasteWarehouseArea.style.display = isVisible ? 'none' : 'block';
+                toggleCsvWarehouseButton.textContent = isVisible ? 'Importar CSV (Actualización Masiva)' : 'Ocultar Importación (CSV)';
             };
+
 
             const importCsvWarehouse = () => {
                 const text = csvWarehouseInput.value.trim(); if (!text) return;
@@ -1127,7 +1134,7 @@ input[type="number"] { width: 100px; }
                     const w = warehouseDB[code]; csvContent += `${code},${w.qty}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "inventario_almacen_v20.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "inventario_almacen_v21.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
 
@@ -1420,7 +1427,7 @@ input[type="number"] { width: 100px; }
                 if (operatorTrucksPending.length === 0) {
                     opTruckListContainer.innerHTML = '<p>¡No quedan camiones pendientes!</p>';
                     opFinishJourneyButton.style.display = 'block';
-                    opStartInventoryButton.style.display = 'block'; // Mostrar si no hay camiones
+                    opStartInventoryButton.style.display = 'block'; 
                 } else {
                     operatorTrucksPending.forEach(plan => {
                         const button = document.createElement('button');
@@ -1430,7 +1437,7 @@ input[type="number"] { width: 100px; }
                         opTruckListContainer.appendChild(button);
                     });
                     opFinishJourneyButton.style.display = 'none';
-                    opStartInventoryButton.style.display = 'none'; // Ocultar si hay camiones pendientes
+                    opStartInventoryButton.style.display = 'none'; 
                 }
             };
 
@@ -1494,7 +1501,7 @@ input[type="number"] { width: 100px; }
                 const endTime = new Date();
                 const totalTimeMin = Math.round((endTime - loadStartTime) / 60000);
 
-                let report = `--- INFORME DE CAMIÓN ---\n\n`;
+                let report = `--- INFORME DE CARGA DE ${currentTruckName} ---\n\n`; // Ajuste para el encabezado
                 report += `Camión: ${currentTruckName}\nFecha: ${endTime.toLocaleDateString('es-ES')}\n`;
                 report += `Hora Inicio Carga: ${formatTime(loadStartTime)}\nHora Fin Carga: ${formatTime(endTime)}\n`;
                 report += `Tiempo Total: ${totalTimeMin} minutos\n\n`;
@@ -1592,7 +1599,7 @@ input[type="number"] { width: 100px; }
                 codes.sort().forEach(code => {
                     const item = currentInventory[code];
                     const li = document.createElement('li');
-                    li.innerHTML = `<strong>${code}</strong> (${item.desc.substring(0, 30)}): <strong>${item.qty} uds.</strong> <button onclick="deleteInventoryItem('${code}')" class="danger" style="padding: 5px; margin-left: 10px;">X</button>`;
+                    li.innerHTML = `<strong>${code}</strong> <span>${item.desc}: <strong>${item.qty} uds.</strong></span> <button onclick="deleteInventoryItem('${code}')" class="danger">X</button>`;
                     opInventoryList.appendChild(li);
                 });
             };
