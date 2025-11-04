@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Carga v21 (Correcciones y Ajustes)</title>
+    <title>Gestión de Carga v22 (Corrección Asistencia e Inventario)</title>
     
     <style>
 /* --- ESTILOS GENERALES --- */
@@ -77,7 +77,6 @@ h2 { margin-top: 10px; }
     overflow: hidden;
 }
 
-/* 3. Ajuste de Espaciado: BD Camiones y Almacén */
 #truck-manager, #warehouse-manager {
     grid-column: span 1;
     padding: 10px 25px; 
@@ -296,9 +295,30 @@ input[type="number"] { width: 100px; }
     align-items: center;
 }
 #op-inventory-list li:last-child { border-bottom: none; }
-/* Ajuste para que el código y la descripción tengan buen espacio */
-#op-inventory-list li strong:nth-child(1) { flex-basis: 70px; flex-shrink: 0; margin-right: 10px; } 
-#op-inventory-list li span { flex-grow: 1; word-break: break-word; text-align: left; }
+/* Ajuste de formato para Inventario de Cierre */
+#op-inventory-list li .item-details { 
+    display: flex; 
+    flex-direction: column; 
+    flex-grow: 1; 
+    text-align: left;
+    padding-right: 10px;
+}
+#op-inventory-list li strong { 
+    font-size: 1.1rem; 
+    color: #ffffff; 
+}
+#op-inventory-list li span { 
+    font-size: 0.9rem; 
+    color: #bdc3c7; 
+    word-break: break-word;
+}
+#op-inventory-list li .danger {
+    padding: 5px 8px; 
+    font-size: 0.8rem;
+    margin-left: 5px; 
+    line-height: 1;
+}
+
 
 /* 5. Ajuste de Estética del Formulario de Inventario */
 #op-inventory-screen .form-inline {
@@ -312,12 +332,6 @@ input[type="number"] { width: 100px; }
     font-size: 1rem; 
     margin-left: 5px; 
     flex-shrink: 0;
-}
-#op-inventory-list .danger {
-    padding: 5px 8px; 
-    font-size: 0.8rem;
-    margin-left: 5px; /* Ajuste para reducir el espacio */
-    line-height: 1;
 }
 
 
@@ -350,7 +364,7 @@ input[type="number"] { width: 100px; }
         </div>
 
         <div id="office-mode">
-            <h1>Gestor de Carga (v21 - Provisional)</h1>
+            <h1>Gestor de Carga (v22 - Provisional)</h1>
 
             <div id="main-processor" class="container">
                 <h2>1. Procesador de Pedidos</h2>
@@ -572,7 +586,7 @@ input[type="number"] { width: 100px; }
         }
         
         // ==============================================================================
-        //  💡 CONSTANTES Y LÓGICA V21 (LocalStorage)
+        //  💡 CONSTANTES Y LÓGICA V22 (LocalStorage)
         // ==============================================================================
 
         // --- CONSTANTES DE ALMACENAMIENTO ---
@@ -617,7 +631,7 @@ input[type="number"] { width: 100px; }
             toggleModeButton = document.getElementById('toggle-mode-button');
             officeModeDiv = document.getElementById('office-mode');
             operatorModeDiv = document.getElementById('operator-mode');
-            assistanceButton = document.getElementById('assistance-button');
+            assistanceButton = document.getElementById('assistance-button'); 
 
             // --- ELEMENTOS DEL DOM (OFICINA) ---
             const pedidoInput = document.getElementById('pedido-input');
@@ -720,7 +734,7 @@ input[type="number"] { width: 100px; }
                     };
                     recognition.onerror = (event) => alert('Error de micrófono: ' + event.error);
                     recognition.onend = () => {
-                        operatorIncidentButton.textContent = 'Grabar Incidencia';
+                        operatorIncidentButton.textContent = '🎙️ Grabar Incidencia (Voz)';
                         operatorIncidentButton.classList.remove('listening');
                         operatorIncidentButton.disabled = false;
                     };
@@ -745,7 +759,7 @@ input[type="number"] { width: 100px; }
             window.assignApplicationEvents = () => {
                  // --- EVENTOS GLOBALES ---
                 toggleModeButton.addEventListener('click', toggleAppMode); 
-                assistanceButton.addEventListener('click', handleAssistance);
+                assistanceButton.addEventListener('click', handleAssistance); 
 
                  // --- EVENTOS OFICINA ---
                 processButton.addEventListener('click', processPedido);
@@ -842,9 +856,11 @@ input[type="number"] { width: 100px; }
 
                 if (problem) {
                     const mode = currentAppMode === 'office' ? 'Oficina' : 'Operario';
-                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v21, Modo ${mode}).\n\nProblema: ${problem}`;
+                    const message = `¡Hola! Necesito asistencia con la app Gestor de Carga (v22, Modo ${mode}).\n\nProblema: ${problem}`;
                     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
                     window.open(url, '_blank');
+                } else {
+                    alert('Asistencia cancelada o problema no descrito.');
                 }
             };
             
@@ -938,7 +954,7 @@ input[type="number"] { width: 100px; }
                     const p = productDB[code]; csvContent += `${code},"${p.desc.replace(/"/g, '""')}",${p.volume}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "productos_carga_v21.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "productos_carga_v22.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
             const toggleCsvImport = () => {
@@ -1137,7 +1153,7 @@ input[type="number"] { width: 100px; }
                     const w = warehouseDB[code]; csvContent += `${code},${w.qty}\n`;
                 });
                 const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "inventario_almacen_v21.csv"); document.body.appendChild(link);
+                link.setAttribute("download", "inventario_almacen_v22.csv"); document.body.appendChild(link);
                 link.click(); document.body.removeChild(link);
             };
 
@@ -1485,153 +1501,228 @@ input[type="number"] { width: 100px; }
                         const stepText = currentLoadList[currentStep]?.desc || 'General';
                         const incidentText = `${time} - Paso ${currentStep + 1} (${stepText}): "${incident}"`;
                         loadIncidents.push(incidentText);
-                        alert('Incidencia registrada.');
+                        alert(`Incidencia registrada: ${incident}`);
                     }
-                    return;
-                }
-                try {
-                    operatorIncidentButton.textContent = '... Escuchando ...';
-                    operatorIncidentButton.classList.add('listening'); operatorIncidentButton.disabled = true;
-                    recognition.start();
-                } catch (e) {
-                    alert('Error al iniciar el micrófono. ¿Diste permiso?');
-                    operatorIncidentButton.textContent = 'Grabar Incidencia';
-                    operatorIncidentButton.classList.remove('listening'); operatorIncidentButton.disabled = false;
                 }
             };
+            
+            // Lógica de Reconocimiento de Voz para Incidentes
+            if (SpeechRecognition) {
+                operatorIncidentButton.textContent = '🎙️ Grabar Incidencia (Voz)';
+                operatorIncidentButton.classList.remove('listening');
+                operatorIncidentButton.disabled = false;
+                
+                // Sobrescribir la función recordIncident para usar la API de Voz si está disponible
+                window.recordIncident = () => {
+                    if (recognition) {
+                        try {
+                            recognition.start();
+                            operatorIncidentButton.textContent = '🔴 Escuchando... Di el incidente ahora';
+                            operatorIncidentButton.classList.add('listening');
+                            operatorIncidentButton.disabled = true;
+                        } catch (e) {
+                            alert('El reconocimiento de voz ya está activo o falló al iniciar. Inténtalo de nuevo.');
+                            operatorIncidentButton.textContent = '🎙️ Grabar Incidencia (Voz)';
+                            operatorIncidentButton.classList.remove('listening');
+                            operatorIncidentButton.disabled = false;
+                        }
+                    } else {
+                        // Fallback a prompt si no hay soporte de voz (mantenido)
+                        const incident = prompt('Navegador no compatible. Escribe la incidencia:');
+                        if (incident) {
+                            const time = formatTime(new Date());
+                            const stepText = currentLoadList[currentStep]?.desc || 'General';
+                            const incidentText = `${time} - Paso ${currentStep + 1} (${stepText}): "${incident}"`;
+                            loadIncidents.push(incidentText);
+                            alert(`Incidencia registrada: ${incident}`);
+                        }
+                    }
+                };
+            }
+
 
             window.finishTruckLoad = () => {
-                const endTime = new Date();
-                const totalTimeMin = Math.round((endTime - loadStartTime) / 60000);
+                const loadEndTime = new Date();
+                const duration = Math.round((loadEndTime - loadStartTime) / 1000 / 60); // Duración en minutos
 
-                let report = `--- INFORME DE CARGA DE ${currentTruckName} ---\n\n`; // Ajuste para el encabezado
-                report += `Camión: ${currentTruckName}\nFecha: ${endTime.toLocaleDateString('es-ES')}\n`;
-                report += `Hora Inicio Carga: ${formatTime(loadStartTime)}\nHora Fin Carga: ${formatTime(endTime)}\n`;
-                report += `Tiempo Total: ${totalTimeMin} minutos\n\n`;
-
-                if (loadIncidents.length > 0) {
-                    report += `--- INCIDENCIAS (${loadIncidents.length}) ---\n`;
-                    loadIncidents.forEach(inc => { report += `- ${inc}\n`; });
-                    allJourneyIncidents.push(...loadIncidents);
-                } else {
-                    report += `--- SIN INCIDENCIAS ---`;
+                const truckIndex = operatorTrucksPending.findIndex(p => p.truckName === currentTruckName);
+                if (truckIndex > -1) {
+                    operatorTrucksPending.splice(truckIndex, 1);
                 }
 
-                reportContent.textContent = report;
-                operatorTrucksCompleted.push(currentTruckName);
-                operatorTrucksPending = operatorTrucksPending.filter(p => p.truckName !== currentTruckName);
+                let report = `--- INFORME DE CARGA ---\n`;
+                report += `Camión: ${currentTruckName}\n`;
+                report += `Duración: ${duration} minutos\n`;
+                report += `Hora de Inicio: ${formatTime(loadStartTime)}\n`;
+                report += `Hora de Fin: ${formatTime(loadEndTime)}\n\n`;
 
-                speak('Carga de camión finalizada. Revisa el informe.');
-                showOperatorScreen('op-truck-report-screen');
-            };
+                report += `[ RESUMEN DE CARGA ]\n`;
+                currentLoadList.forEach(item => {
+                    report += `${item.qty.toFixed(1).padEnd(6)} uds | ${item.code} | ${item.desc}\n`;
+                });
 
-            window.finishJourney = () => {
-                const journeyEndTime = new Date();
-                const totalTimeMin = Math.round((journeyEndTime - journeyStartTime) / 60000);
-
-                let report = `--- INFORME DE JORNADA ---\n\n`;
-                report += `Fecha: ${journeyEndTime.toLocaleDateString('es-ES')}\n`;
-                report += `Hora Inicio Jornada: ${formatTime(journeyStartTime)}\n`;
-                report += `Hora Fin Jornada: ${formatTime(journeyEndTime)}\n`;
-                report += `Tiempo Total: ${totalTimeMin} minutos\n\n`;
-                report += `--- CAMIONES CARGADOS (${operatorTrucksCompleted.length}) ---\n`;
-                report += operatorTrucksCompleted.join(', ') || 'Ninguno';
-                report += `\n\n`;
-
-                if (allJourneyIncidents.length > 0) {
-                    report += `--- RESUMEN DE INCIDENCIAS (${allJourneyIncidents.length}) ---\n`;
-                    allJourneyIncidents.forEach(inc => { report += `- ${inc}\n`; });
+                report += `\n[ INCIDENCIAS REGISTRADAS ]\n`;
+                if (loadIncidents.length > 0) {
+                    loadIncidents.forEach(inc => report += `${inc}\n`);
+                    allJourneyIncidents.push({ truck: currentTruckName, incidents: loadIncidents });
                 } else {
-                    report += `--- SIN INCIDENCIAS EN LA JORNADA ---`;
+                    report += `Ninguna incidencia registrada.\n`;
+                }
+                
+                operatorTrucksCompleted.push({
+                    truckName: currentTruckName,
+                    duration,
+                    startTime: loadStartTime,
+                    endTime: loadEndTime,
+                    incidents: loadIncidents,
+                    reportText: report
+                });
+
+                reportContent.textContent = report;
+                speak(`Carga de ${currentTruckName} finalizada. ${loadIncidents.length > 0 ? 'Con incidencias.' : 'Sin incidencias.'}`);
+                showOperatorScreen('op-truck-report-screen');
+                
+                // Actualizar la lista después de la finalización
+                renderOperatorTruckList();
+            };
+            
+            window.finishJourney = () => {
+                if (!confirm('¿Seguro que quieres finalizar la jornada?')) { return; }
+                const journeyEndTime = new Date();
+                const totalDuration = Math.round((journeyEndTime - journeyStartTime) / 1000 / 60); // Duración en minutos
+
+                let report = `--- INFORME DE JORNADA ---\n`;
+                report += `Jornada finalizada: ${formatTime(journeyEndTime)}\n`;
+                report += `Duración Total: ${totalDuration} minutos\n\n`;
+
+                report += `[ RESUMEN DE CAMIONES CARGADOS ]\n`;
+                if (operatorTrucksCompleted.length > 0) {
+                    operatorTrucksCompleted.forEach((t, index) => {
+                        report += `${index + 1}. ${t.truckName} (${t.duration} min). Incidencias: ${t.incidents.length}\n`;
+                    });
+                } else {
+                    report += `Ningún camión cargado.\n`;
+                }
+
+                report += `\n[ INCIDENCIAS GLOBALES DE LA JORNADA ]\n`;
+                if (allJourneyIncidents.length > 0) {
+                    allJourneyIncidents.forEach(tj => {
+                        report += `\n--- Camión ${tj.truck} (${tj.incidents.length} incidencias) ---\n`;
+                        tj.incidents.forEach(inc => report += `${inc}\n`);
+                    });
+                } else {
+                    report += `Ninguna incidencia global o específica de camión registrada.\n`;
                 }
 
                 journeyReportContent.textContent = report;
-                speak('Jornada finalizada. Revisa el informe final.');
+                speak('Jornada finalizada. Reporte generado.');
                 showOperatorScreen('op-journey-report-screen');
             };
 
-            window.shareReport = (via, textContent, subject) => {
-                const text = textContent;
-                let url = '';
-                if (via === 'whatsapp') {
-                    const cleanText = text.replace(/(\t|\r)/g, '').trim();
-                    url = `https://wa.me/?text=${encodeURIComponent(cleanText)}`;
-                } else {
-                    url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-                }
-                window.open(url, '_blank');
+            // --- LÓGICA DE INVENTARIO DE CIERRE (OPERARIO) ---
+            
+            window.startInventoryReport = () => {
+                 currentInventory = {};
+                 opInventoryCodeInput.value = '';
+                 opInventoryQtyInput.value = '';
+                 renderInventoryList();
+                 showOperatorScreen('op-inventory-screen');
             };
             
-            // --- LÓGICA MODO OPERARIO - INVENTARIO DE CIERRE ---
-
-            window.startInventoryReport = () => {
-                currentInventory = {};
-                document.getElementById('op-inventory-list').innerHTML = '<p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>';
-                opInventoryCodeInput.value = '';
-                opInventoryQtyInput.value = '';
-                showOperatorScreen('op-inventory-screen');
-                speak('Iniciando inventario de cierre. Introduce código y cantidad.');
-            };
-
             window.addInventoryItem = () => {
-                const code = opInventoryCodeInput.value.trim();
+                const code = opInventoryCodeInput.value.trim().toUpperCase();
                 const qty = parseInt(opInventoryQtyInput.value);
-
-                if (!code) { alert('Código es obligatorio.'); return; }
-                if (isNaN(qty) || qty < 0) { alert('Cantidad debe ser un número positivo.'); return; }
-
-                const desc = productDB[code] ? productDB[code].desc : 'Producto Desconocido (verificar)';
+                
+                if (!code || isNaN(qty) || qty < 0) {
+                    alert('Por favor, ingresa un código de producto y una cantidad válida (>= 0).');
+                    return;
+                }
+                
+                const productInfo = productDB[code];
+                let desc = productInfo ? productInfo.desc : 'DESCRIPCIÓN NO ENCONTRADA';
 
                 currentInventory[code] = { qty, desc };
-
+                
                 opInventoryCodeInput.value = '';
                 opInventoryQtyInput.value = '';
                 opInventoryCodeInput.focus();
-                renderCurrentInventoryList();
+                
+                renderInventoryList();
+            };
+            
+            window.deleteInventoryItem = (code) => {
+                 if (confirm(`¿Eliminar ${code} del reporte de inventario?`)) {
+                    delete currentInventory[code];
+                    renderInventoryList();
+                 }
             };
 
-            const renderCurrentInventoryList = () => {
-                const opInventoryList = document.getElementById('op-inventory-list');
+            window.renderInventoryList = () => {
                 opInventoryList.innerHTML = '';
-                const codes = Object.keys(currentInventory);
+                const codes = Object.keys(currentInventory).sort();
+                
                 if (codes.length === 0) {
                     opInventoryList.innerHTML = '<p style="color: #ccc; text-align: center;">Aún no hay productos en el inventario de cierre.</p>';
                     return;
                 }
-
-                codes.sort().forEach(code => {
+                
+                codes.forEach(code => {
                     const item = currentInventory[code];
                     const li = document.createElement('li');
-                    li.innerHTML = `<strong>${code}</strong> <span>${item.desc}: <strong>${item.qty} uds.</strong></span> <button onclick="deleteInventoryItem('${code}')" class="danger">X</button>`;
+                    
+                    // 🎨 FORMATO DE PANTALLA DE INVENTARIO MODIFICADO
+                    li.innerHTML = `
+                        <div class="item-details">
+                            <strong>${code}</strong>
+                            <span>${item.desc}</span>
+                        </div>
+                        <strong style="color: #2ecc71;">${item.qty} uds.</strong>
+                        <button onclick="deleteInventoryItem('${code}')" class="danger">X</button>
+                    `;
                     opInventoryList.appendChild(li);
                 });
             };
-
-            window.deleteInventoryItem = (code) => {
-                delete currentInventory[code];
-                renderCurrentInventoryList();
-            };
-
+            
             window.generateInventoryReport = () => {
-                const codes = Object.keys(currentInventory);
-                if (codes.length === 0) { alert('No hay datos para el informe.'); return; }
-
-                let report = `--- REPORTE DE INVENTARIO DE CIERRE ---\n\n`;
-                report += `Fecha: ${new Date().toLocaleDateString('es-ES')}\n\n`;
-                report += `INSTRUCCIÓN PARA OFICINA: Pegar el CSV a continuación en la opción 'Importar CSV (Actualización Masiva)'\n\n`;
-                report += `Codigo,Cantidad\n`; 
-                
-                codes.forEach(code => {
-                    report += `${code},${currentInventory[code].qty}\n`;
-                });
-
-                inventoryReportContent.textContent = report;
-                showOperatorScreen('op-inventory-report-screen');
-                speak('Reporte de inventario generado. Listo para enviar.');
+                 if (Object.keys(currentInventory).length === 0) {
+                     alert('El inventario de cierre está vacío. Por favor, añade productos.');
+                     return;
+                 }
+                 
+                 let report = `--- REPORTE DE INVENTARIO DE CIERRE ---\n`;
+                 report += `Fecha de Generación: ${new Date().toLocaleDateString('es-ES')}\n`;
+                 report += `Hora de Generación: ${formatTime(new Date())}\n\n`;
+                 
+                 report += `[ INVENTARIO FÍSICO ]\n`;
+                 report += `CÓDIGO | CANTIDAD | DESCRIPCIÓN\n`;
+                 report += `--------------------------------------\n`;
+                 
+                 Object.keys(currentInventory).sort().forEach(code => {
+                     const item = currentInventory[code];
+                     const qtyStr = item.qty.toString().padEnd(8);
+                     report += `${code.padEnd(6)} | ${qtyStr} | ${item.desc}\n`;
+                 });
+                 
+                 inventoryReportContent.textContent = report;
+                 showOperatorScreen('op-inventory-report-screen');
+                 speak('Inventario de cierre generado.');
             };
 
-            // --- FIN DE DOMContentLoaded ---
+
+            // --- LÓGICA DE COMPARTIR REPORTES (WhatsApp / Email) ---
+
+            window.shareReport = (type, content, subject) => {
+                if (type === 'whatsapp') {
+                    const url = `https://wa.me/?text=${encodeURIComponent(`${subject}\n\n${content}`)}`;
+                    window.open(url, '_blank');
+                } else if (type === 'email') {
+                    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
+                    window.open(url, '_blank');
+                }
+            };
+            
         });
+        
     </script>
 </body>
 </html>
