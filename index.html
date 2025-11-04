@@ -296,8 +296,9 @@ input[type="number"] { width: 100px; }
     align-items: center;
 }
 #op-inventory-list li:last-child { border-bottom: none; }
-#op-inventory-list li strong:nth-child(1) { flex-basis: 70px; flex-shrink: 0; } 
-#op-inventory-list li span { flex-grow: 1; word-break: break-word; }
+/* Ajuste para que el código y la descripción tengan buen espacio */
+#op-inventory-list li strong:nth-child(1) { flex-basis: 70px; flex-shrink: 0; margin-right: 10px; } 
+#op-inventory-list li span { flex-grow: 1; word-break: break-word; text-align: left; }
 
 /* 5. Ajuste de Estética del Formulario de Inventario */
 #op-inventory-screen .form-inline {
@@ -316,6 +317,7 @@ input[type="number"] { width: 100px; }
     padding: 5px 8px; 
     font-size: 0.8rem;
     margin-left: 5px; /* Ajuste para reducir el espacio */
+    line-height: 1;
 }
 
 
@@ -1093,6 +1095,7 @@ input[type="number"] { width: 100px; }
             const toggleCsvWarehouseImport = () => {
                 const isVisible = csvPasteWarehouseArea.style.display === 'block';
                 csvPasteWarehouseArea.style.display = isVisible ? 'none' : 'block';
+                // Corrección del texto del botón:
                 toggleCsvWarehouseButton.textContent = isVisible ? 'Importar CSV (Actualización Masiva)' : 'Ocultar Importación (CSV)';
             };
 
